@@ -99,8 +99,17 @@ namespace Constellation
 
             FindSubsystem();
 
-            bool hasRealHands = m_Subsystem != null && m_Subsystem.running;
-            if (hasRealHands)
+            bool simulated = false;
+#if UNITY_EDITOR
+            // 에디터에서는 H로 켠 시뮬레이션 손이 있으면 OpenXR 런타임보다 우선한다.
+            simulated = m_Config.editorSimulation && SimulateHands();
+#endif
+            bool hasRealHands = !simulated && m_Subsystem != null && m_Subsystem.running;
+            if (simulated)
+            {
+                IsSimulated = true;
+            }
+            else if (hasRealHands)
             {
                 IsSimulated = false;
                 ReadHand(m_Subsystem.leftHand, m_Hands[0]);
@@ -108,16 +117,9 @@ namespace Constellation
             }
             else
             {
-                bool simulated = false;
-#if UNITY_EDITOR
-                simulated = m_Config.editorSimulation && SimulateHands();
-#endif
-                IsSimulated = simulated;
-                if (!simulated)
-                {
-                    m_Hands[0].ClearTracking();
-                    m_Hands[1].ClearTracking();
-                }
+                IsSimulated = false;
+                m_Hands[0].ClearTracking();
+                m_Hands[1].ClearTracking();
             }
 
             UpdateDerived(HandSide.Left);
