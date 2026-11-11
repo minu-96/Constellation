@@ -1,4 +1,4 @@
-# Constellation (가제: 별 잇기)
+# Constellation - One star, One story
 
 핸드트래킹으로 밤하늘의 별을 이어 나만의 별자리를 그리면, AI가 모양을 읽어 이름과 옛이야기를 지어주는 Quest 3 VR 체험입니다.
 
