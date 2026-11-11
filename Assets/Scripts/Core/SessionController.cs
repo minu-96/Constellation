@@ -19,6 +19,10 @@ namespace Constellation
         [NonSerialized] public KeywordSelector keywordSelector;
         [NonSerialized] public StarField starField;
         [NonSerialized] public ConstellationDrawer drawer;
+        [NonSerialized] public CaptureService capture;
+        [NonSerialized] public AiClient aiClient;
+        [NonSerialized] public FallbackStore fallback;
+        [NonSerialized] public GatherEffect gatherEffect;
 
         /// <summary>상태가 바뀐 뒤에 알린다(이전 상태, 새 상태).</summary>
         public event Action<SessionState, SessionState> StateChanged;
@@ -30,8 +34,11 @@ namespace Constellation
         Vector3 m_AnchorPosition;
         Quaternion m_AnchorRotation = Quaternion.identity;
         int m_StarCount;
+        byte[] m_CaptureJpeg;
+        Texture2D m_CaptureTexture;
         string m_ResultName;
         string m_ResultStory;
+        bool m_AiDone;
 
         // ---- 타이머
         float m_StateEnterTime;
@@ -83,6 +90,7 @@ namespace Constellation
                 gestures.HandsTogether -= OnHandsTogether;
                 gestures.UndoRequested -= OnUndoRequested;
             }
+            ReleaseCapture();
         }
 
         // ================================================================ 상태 전환
@@ -142,9 +150,14 @@ namespace Constellation
 
                 case SessionState.AiRequest:
                     guide.SetHint(config.msgAiWaiting);
+                    m_AiDone = false;
+                    starField.SetCandidatesVisible(false);
+                    gatherEffect.Play(starField.GetSelectionCenter(drawer.SelectedIndices), config.starDistance * 0.9f);
+                    aiClient.Request(m_Keyword.id, m_StarCount, m_CaptureJpeg, OnAiResult);
                     break;
 
                 case SessionState.Result:
+                    EnsureResult();
                     guide.ClearAlert();
                     // 결과 화면이 생기기 전까지는 안내 글자로 이름과 이야기를 보여 준다.
                     guide.SetElevation(config.guideElevationIdle);
@@ -168,6 +181,10 @@ namespace Constellation
                 case SessionState.Drawing:
                     drawer.End();
                     gestures.Detecting = false;
+                    break;
+
+                case SessionState.AiRequest:
+                    gatherEffect.Stop();
                     break;
 
                 case SessionState.Card:
@@ -257,18 +274,41 @@ namespace Constellation
 
         void UpdateCapture()
         {
-            if (StateSeconds >= k_PlaceholderSeconds)
+            // 자동 단계. 캡처에 실패하면 AI를 건너뛰고 폴백 이야기로 결과 화면에 간다(F-10).
+            bool ok = false;
+            try
+            {
+                ReleaseCapture();
+                ok = capture.TryCapture(starField.GetProjectedPoints(drawer.SelectedIndices), out m_CaptureJpeg, out m_CaptureTexture);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[Constellation] 캡처 실패: " + e.Message);
+            }
+
+            if (ok)
+            {
                 Go(SessionState.AiRequest);
+            }
+            else
+            {
+                UseFallback();
+                Go(SessionState.Result);
+            }
         }
 
         void UpdateAiRequest()
         {
-            if (StateSeconds >= k_PlaceholderSeconds)
+            // AiClient가 10초에 끊지만, 만약을 위해 여기서도 한 번 더 지켜본다.
+            if (!m_AiDone && StateSeconds > config.aiTimeoutSeconds + 2f)
             {
-                m_ResultName = "별자리";
-                m_ResultStory = "아직 이야기가 연결되지 않았어요.";
-                Go(SessionState.Result);
+                aiClient.Cancel();
+                UseFallback();
+                m_AiDone = true;
             }
+
+            if (m_AiDone && StateSeconds >= config.aiMinWaitSeconds)
+                Go(SessionState.Result);
         }
 
         void UpdateResult()
@@ -366,6 +406,47 @@ namespace Constellation
             return config.undoGesture == UndoGestureType.MiddlePinch ? config.msgUndoHintMiddlePinch : config.msgUndoHintSwipe;
         }
 
+        void OnAiResult(AiResult result)
+        {
+            if (State != SessionState.AiRequest || m_AiDone)
+                return;
+            if (result != null && result.ok)
+            {
+                m_ResultName = result.name;
+                m_ResultStory = result.story;
+            }
+            else
+            {
+                // 타임아웃, 오류, 형식 이상은 모두 같은 방식으로 폴백한다. 사용자에게는 알리지 않는다.
+                if (config.logStateChanges)
+                    Debug.Log("[Constellation] AI 실패, 폴백 사용: " + (result != null ? result.error : "null"));
+                UseFallback();
+            }
+            m_AiDone = true;
+        }
+
+        void UseFallback()
+        {
+            FallbackStory story = fallback.GetRandom(m_Keyword != null ? m_Keyword.id : null);
+            m_ResultName = story.name;
+            m_ResultStory = story.story;
+        }
+
+        // 어떤 경로로 왔든 결과 화면에는 반드시 이름과 이야기가 있어야 한다(F-10).
+        void EnsureResult()
+        {
+            if (string.IsNullOrEmpty(m_ResultName) || string.IsNullOrEmpty(m_ResultStory))
+                UseFallback();
+        }
+
+        void ReleaseCapture()
+        {
+            if (m_CaptureTexture != null)
+                Destroy(m_CaptureTexture);
+            m_CaptureTexture = null;
+            m_CaptureJpeg = null;
+        }
+
         // ================================================================ 보조
 
         // 체험의 기준점. 이 순간의 머리 위치와 바라보는 방향(수평)으로 정한다.
@@ -392,6 +473,10 @@ namespace Constellation
             keywordSelector.Hide();
             drawer.Clear();
             starField.Clear();
+            m_AiDone = false;
+            aiClient.Cancel();
+            gatherEffect.Stop();
+            ReleaseCapture();
             guide.ClearAll();
         }
     }

@@ -47,6 +47,18 @@ namespace Constellation
             ConstellationDrawer drawer = Create<ConstellationDrawer>("Constellation Drawer");
             drawer.Init(config, hands, starField);
 
+            CaptureService capture = Create<CaptureService>("Capture Service");
+            capture.Init(config);
+
+            AiClient aiClient = Create<AiClient>("AI Client");
+            aiClient.Init(config);
+
+            FallbackStore fallback = Create<FallbackStore>("Fallback Store");
+            fallback.Init(config);
+
+            GatherEffect gatherEffect = Create<GatherEffect>("Gather Effect");
+            gatherEffect.Init(config);
+
             SessionController session = Create<SessionController>("Session Controller");
             session.config = config;
             session.head = headCamera.transform;
@@ -56,6 +68,10 @@ namespace Constellation
             session.keywordSelector = keywordSelector;
             session.starField = starField;
             session.drawer = drawer;
+            session.capture = capture;
+            session.aiClient = aiClient;
+            session.fallback = fallback;
+            session.gatherEffect = gatherEffect;
             session.Begin();
         }
 
