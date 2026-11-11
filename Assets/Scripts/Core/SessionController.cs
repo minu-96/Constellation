@@ -25,6 +25,7 @@ namespace Constellation
         [NonSerialized] public GatherEffect gatherEffect;
         [NonSerialized] public ResultView resultView;
         [NonSerialized] public CardService cardService;
+        [NonSerialized] public AudioManager audioManager;
 
         /// <summary>상태가 바뀐 뒤에 알린다(이전 상태, 새 상태).</summary>
         public event Action<SessionState, SessionState> StateChanged;
@@ -167,6 +168,8 @@ namespace Constellation
                     resultView.Show(m_ResultName, m_ResultStory, m_AnchorPosition, m_AnchorRotation);
                     // 카드 화면에서 QR이 바로 보이도록 업로드를 미리 시작한다.
                     cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg);
+                    audioManager.PlayResult();
+                    audioManager.SetAmbientDucked(true);
                     break;
 
                 case SessionState.Card:
@@ -380,6 +383,7 @@ namespace Constellation
             guide.ClearAlert();
             // 선택 직후 후보 별을 뿌린다(F-04).
             starField.Spawn(m_AnchorPosition, m_AnchorRotation);
+            audioManager.PlayKeywordSelect();
         }
 
         void OnStarAdded(int count)
@@ -391,6 +395,10 @@ namespace Constellation
             guide.SetHint(count >= config.minStars ? config.msgDrawingHintCanFinish : config.msgDrawingHint);
             if (count == 2)
                 guide.FlashAlert(UndoHint(), config.alertSeconds + 1f);
+            if (count <= 1)
+                audioManager.PlayStarGrab(count);
+            else
+                audioManager.PlayLineConnect(count);
         }
 
         void OnMaxStarsReached()
@@ -412,6 +420,7 @@ namespace Constellation
         {
             m_StarCount = count;
             guide.SetHint(count >= config.minStars ? config.msgDrawingHintCanFinish : config.msgDrawingHint);
+            audioManager.PlayUndo();
         }
 
         void OnHandsTogether()
@@ -425,6 +434,7 @@ namespace Constellation
                 guide.FlashAlert(config.msgNeedMoreStars, config.alertSeconds);
                 return;
             }
+            audioManager.PlayComplete();
             Go(SessionState.Capture);
         }
 
@@ -508,6 +518,7 @@ namespace Constellation
             m_CardReadyTime = -1f;
             resultView.Hide();
             cardService.Clear();
+            audioManager.SetAmbientDucked(false);
             guide.ClearAll();
         }
     }

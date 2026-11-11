@@ -65,6 +65,9 @@ namespace Constellation
             CardService cardService = Create<CardService>("Card Service");
             cardService.Init(config);
 
+            AudioManager audioManager = Create<AudioManager>("Audio Manager");
+            audioManager.Init(config, headCamera.transform);
+
             SessionController session = Create<SessionController>("Session Controller");
             session.config = config;
             session.head = headCamera.transform;
@@ -80,6 +83,7 @@ namespace Constellation
             session.gatherEffect = gatherEffect;
             session.resultView = resultView;
             session.cardService = cardService;
+            session.audioManager = audioManager;
             session.Begin();
         }
 
