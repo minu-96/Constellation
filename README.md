@@ -30,6 +30,16 @@ AI 응답이 10초 안에 오지 않거나 형식이 깨지면 키워드별로 �
 | [기획서](docs/planning.md) | 기획 의도, 체험 플로우, AI 연동 설계, 프롬프트 초안, 폴백 이야기 15세트, 전시 운영 조건, 브로셔 제출물, 리스크, 확장 계획, 미정 사항 |
 | [기능 명세서](docs/spec.md) | 기능 ID(F-01~F-17)별 동작과 완료 조건, 상태 정의, AI 요청·응답 규격, Unity 구조, 설정값, 브랜치와 커밋 규칙, 테스트 체크리스트 |
 
+## 중계 서버 연결
+
+앱은 중계 서버 주소와 공유 토큰을 저장소에 올리지 않는 파일에서 읽습니다.
+
+1. [worker/README.md](worker/README.md)를 따라 Worker를 배포합니다.
+2. `Assets/Data/constellation_secrets.example.json`을 `Assets/Resources/constellation_secrets.json`으로 복사합니다.
+3. 복사한 파일의 `workerUrl`에 Worker 주소를, `appToken`에 `APP_SHARED_TOKEN`과 같은 값을 넣습니다.
+
+이 파일은 `.gitignore`에 들어 있어 커밋되지 않습니다. 파일이 없거나 값이 비어 있으면 AI 요청 없이 폴백 이야기로 진행합니다.
+
 ## 일정
 
 - 브로셔 이미지·작품개요 제출: 2026.11.22
