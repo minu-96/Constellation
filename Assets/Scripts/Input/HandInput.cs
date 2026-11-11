@@ -326,12 +326,6 @@ namespace Constellation
                 return false;
             }
 
-            if (Time.unscaledTime >= m_SimLogTime)
-            {
-                m_SimLogTime = Time.unscaledTime + 3f;
-                Debug.Log("[HandInput] 시뮬 상태: visible=" + m_SimHandVisible + " mouse=" + mouse.position.ReadValue() + " hKey=" + keyboard.hKey.isPressed + " config.sim=" + m_Config.editorSimulation);
-            }
-
             if (keyboard.hKey.wasPressedThisFrame)
             {
                 m_SimHandVisible = !m_SimHandVisible;
