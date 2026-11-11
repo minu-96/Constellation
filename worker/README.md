@@ -32,9 +32,24 @@ Quest 앱과 Claude API 사이에 놓이는 작은 서버입니다. 앱은 별�
 | 413 | 이미지 300KB 초과 |
 | 429 | 기기당 호출 제한 초과 |
 | 500 | 서버에 시크릿이 등록되지 않음 |
+| 503 | 카드 저장소(KV)가 연결되지 않음(`/card`만) |
 | 502 | Claude 호출 실패, 또는 답이 규칙에 맞지 않음 |
 
 앱은 200이 아니면 모두 폴백 이야기로 넘어갑니다.
+
+### 결과 카드 (선택)
+
+`POST /card` 는 이름·이야기·별자리 이미지를 Cloudflare KV에 저장하고 카드 주소를 돌려줍니다. 앱은 이 주소를 QR로 보여 줍니다. `GET /card/<id>` 는 토큰 없이 누구나 열 수 있는 카드 페이지입니다(주소를 아는 사람만).
+
+```json
+{ "keyword": "wish", "name": "소원나무별", "story": "깊은 산골 ...", "image": "<base64 JPEG>" }
+```
+
+```json
+{ "id": "abcdefghijkm", "url": "https://<Worker 주소>/card/abcdefghijkm" }
+```
+
+KV를 연결하지 않으면 `POST /card` 는 503을 돌려주고, 앱은 QR 없이 체험을 끝냅니다. 카드는 30일 뒤 자동으로 지워집니다(`CARD_TTL_DAYS`).
 
 ## 준비물
 
@@ -115,6 +130,12 @@ npx wrangler secret put ANTHROPIC_API_KEY
 npx wrangler secret put APP_SHARED_TOKEN
 ```
 
+결과 카드(QR)를 쓰려면 KV 네임스페이스를 만듭니다. 출력된 `id`를 `wrangler.toml`의 `[[kv_namespaces]]` 주석 블록에 넣고 주석을 풉니다. 카드가 필요 없으면 건너뜁니다.
+
+```bash
+npx wrangler kv namespace create CARDS
+```
+
 배포합니다. 끝나면 `https://constellation-relay.<계정>.workers.dev` 주소가 나옵니다.
 
 ```bash
@@ -132,7 +153,8 @@ npm run deploy
 | `CLAUDE_MODEL` | `claude-haiku-5-5` | 모델명. 품질 비교 후 `claude-sonnet-5-5` 등으로 바꿀 수 있다 |
 | `CLAUDE_EFFORT` | `low` | 응답 깊이. 낮을수록 빠르다 |
 | `CLAUDE_TIMEOUT_MS` | `9000` | Claude 호출 제한 시간. 앱의 10초보다 짧게 둔다 |
-| `RATE_LIMIT_PER_MINUTE` | `6` | 기기당 분당 호출 횟수. 기기 테스트 후 조정 |
+| `RATE_LIMIT_PER_MINUTE` | `6` | 기기당 분당 호출 횟수(이야기와 카드를 따로 센다). 기기 테스트 후 조정 |
+| `CARD_TTL_DAYS` | `30` | 결과 카드 보관 기간(일) |
 
 ## 알아 둘 점
 

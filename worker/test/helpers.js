@@ -60,3 +60,19 @@ export function storyRequest(body, { token = TEST_TOKEN, deviceId = "quest-test-
 export function goodBody(overrides = {}) {
   return { keyword: "wish", starCount: 5, image: fakeJpegBase64(), ...overrides };
 }
+
+/** Cloudflare KV를 흉내 낸 메모리 저장소 */
+export function fakeKv() {
+  const store = new Map();
+  return {
+    store,
+    puts: [],
+    async put(key, value, options) {
+      this.puts.push({ key, options });
+      store.set(key, value);
+    },
+    async get(key) {
+      return store.has(key) ? store.get(key) : null;
+    },
+  };
+}

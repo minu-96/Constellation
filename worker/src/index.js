@@ -2,6 +2,7 @@
 // Quest 앱 → 이 Worker → Claude API. API 키는 Worker 시크릿에만 둔다.
 // 처리 순서(docs/spec.md): 요청 검증 → 호출 제한 → Claude 호출 → 응답 검증.
 
+import { handleCardUpload, handleCardView } from "./card.js";
 import { createAnthropicClient, requestStoryText, parseModelJson, toPositiveInt } from "./claude.js";
 import { checkToken, deviceKey, json, readJsonBody } from "./http.js";
 import { createRateLimiter } from "./rateLimit.js";
@@ -59,6 +60,14 @@ export function createHandler(deps = {}) {
       if (pathname === "/" || pathname === "/story") {
         if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
         return handleStory(request, env);
+      }
+      if (pathname === "/card") {
+        if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
+        return handleCardUpload(request, env, { rateLimiter, now });
+      }
+      if (pathname.startsWith("/card/")) {
+        if (request.method !== "GET" && request.method !== "HEAD") return json(405, { error: "method_not_allowed" });
+        return handleCardView(pathname.slice("/card/".length), env);
       }
       return json(404, { error: "not_found" });
     },

@@ -12,6 +12,15 @@ CLAUDE_EFFORT = "low"
 CLAUDE_TIMEOUT_MS = "9000"
 # 기기당 분당 호출 횟수. 기기 테스트 후 조정.
 RATE_LIMIT_PER_MINUTE = "6"
+# 결과 카드 보관 기간(일)
+CARD_TTL_DAYS = "30"
+
+# 결과 카드(QR) 저장소. 쓰려면 아래 명령으로 KV 네임스페이스를 만들고,
+# 출력된 id를 넣은 뒤 주석을 푼다. 연결하지 않으면 카드 없이 체험이 끝난다.
+#   npx wrangler kv namespace create CARDS
+# [[kv_namespaces]]
+# binding = "CARDS"
+# id = "<위 명령이 출력한 id>"
 
 # 시크릿은 이 파일에 적지 않는다. 아래 명령으로 등록한다.
 #   npx wrangler secret put ANTHROPIC_API_KEY   <- Anthropic 콘솔에서 발급한 API 키
