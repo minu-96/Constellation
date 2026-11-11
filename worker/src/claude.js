@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { buildPrompt, STORY_SCHEMA } from "./prompt.js";
 
 export const DEFAULT_MODEL = "claude-haiku-5-5";
@@ -6,13 +5,34 @@ const DEFAULT_EFFORT = "low";
 const DEFAULT_TIMEOUT_MS = 9000; // 앱이 10초에 끊으므로 그보다 먼저 포기한다.
 const MAX_TOKENS = 1024;
 
-/** 실제 Anthropic 클라이언트를 만든다. 테스트에서는 가짜로 바꿔 끼운다. */
+const API_URL = "https://api.anthropic.com/v1/messages";
+const API_VERSION = "2023-06-01";
+
+/**
+ * 실제 Anthropic 클라이언트를 만든다. 테스트에서는 가짜로 바꿔 끼운다.
+ * SDK 없이 fetch로 직접 부른다(번들이 작아 대시보드 편집기에도 붙여 넣을 수 있다).
+ * 재시도는 하지 않는다(명세: 재시도 없음).
+ */
 export function createAnthropicClient(env) {
-  return new Anthropic({
-    apiKey: env.ANTHROPIC_API_KEY,
-    maxRetries: 0, // 재시도하면 대기 시간이 길어진다(명세: 재시도 없음).
-    timeout: toPositiveInt(env.CLAUDE_TIMEOUT_MS, DEFAULT_TIMEOUT_MS),
-  });
+  const timeoutMs = toPositiveInt(env.CLAUDE_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
+  return {
+    messages: {
+      async create(params) {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-api-key": env.ANTHROPIC_API_KEY,
+            "anthropic-version": API_VERSION,
+          },
+          body: JSON.stringify(params),
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+        if (!res.ok) throw new Error(`anthropic_http_${res.status}`);
+        return res.json();
+      },
+    },
+  };
 }
 
 /**
