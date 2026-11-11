@@ -297,9 +297,9 @@ namespace Constellation
         // ---------------------------------------------------------------- 에디터 시뮬레이션
         // 헤드셋 없이 흐름을 확인하기 위한 것. 빌드에는 들어가지 않는다.
         //   마우스 이동: 오른손 위치      마우스 왼쪽 버튼: 핀치
-        //   휠: 손까지의 거리            H: 손 보이기/숨기기
+        //   휠: 손까지의 거리            H: 손 숨기기/보이기(기본은 보임)
         //   Space(누르고 있기): 양손 모으기   Z: 되돌리기(GestureDetector가 처리)
-        bool m_SimHandVisible;
+        bool m_SimHandVisible = true; // 에디터에서는 기본으로 켜 둔다(H로 끄기)
         bool m_SimWarned;
         float m_SimDepth = 0.5f;
 
