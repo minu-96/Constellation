@@ -23,6 +23,9 @@ namespace Constellation
         Transform m_Head;
 
         float m_TogetherTime;
+        float m_TogetherLostTime;
+        // 손을 맞대면 서로 가려 추적이 잠깐 끊기기 쉽다. 이 시간 안의 끊김은 계속 모은 것으로 본다.
+        const float k_TogetherLostGrace = 0.5f;
         bool m_TogetherFired;
         float m_UndoReadyTime;
         readonly float[] m_SwipeTravel = new float[2];
@@ -75,9 +78,15 @@ namespace Constellation
         {
             if (!m_Hands.BothHandsTracked)
             {
-                m_TogetherTime = 0f;
+                // 모으는 중에 추적이 끊겼으면 잠깐은 이어서 센다.
+                m_TogetherLostTime += Time.unscaledDeltaTime;
+                if (m_TogetherTime > 0f && !m_TogetherFired && m_TogetherLostTime <= k_TogetherLostGrace)
+                    AdvanceTogether();
+                else
+                    m_TogetherTime = 0f;
                 return;
             }
+            m_TogetherLostTime = 0f;
 
             float distance = Vector3.Distance(m_Hands.Left.palm, m_Hands.Right.palm);
             if (m_TogetherFired)
@@ -88,20 +97,20 @@ namespace Constellation
             }
 
             if (distance < m_Config.handsTogetherDistance)
-            {
-                m_TogetherTime += Time.unscaledDeltaTime;
-                if (m_TogetherTime >= m_Config.handsTogetherHoldSeconds)
-                {
-                    m_TogetherFired = true;
-                    m_TogetherTime = 0f;
-                    if (HandsTogether != null)
-                        HandsTogether();
-                }
-            }
+                AdvanceTogether();
             else
-            {
                 m_TogetherTime = 0f;
-            }
+        }
+
+        void AdvanceTogether()
+        {
+            m_TogetherTime += Time.unscaledDeltaTime;
+            if (m_TogetherTime < m_Config.handsTogetherHoldSeconds)
+                return;
+            m_TogetherFired = true;
+            m_TogetherTime = 0f;
+            if (HandsTogether != null)
+                HandsTogether();
         }
 
         // 손바닥을 편 채 좌우로 빠르게 움직인 거리를 쌓아, 기준을 넘으면 되돌리기로 본다.
