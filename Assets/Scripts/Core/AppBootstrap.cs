@@ -59,6 +59,12 @@ namespace Constellation
             GatherEffect gatherEffect = Create<GatherEffect>("Gather Effect");
             gatherEffect.Init(config);
 
+            ResultView resultView = Create<ResultView>("Result View");
+            resultView.Init(config);
+
+            CardService cardService = Create<CardService>("Card Service");
+            cardService.Init(config);
+
             SessionController session = Create<SessionController>("Session Controller");
             session.config = config;
             session.head = headCamera.transform;
@@ -72,6 +78,8 @@ namespace Constellation
             session.aiClient = aiClient;
             session.fallback = fallback;
             session.gatherEffect = gatherEffect;
+            session.resultView = resultView;
+            session.cardService = cardService;
             session.Begin();
         }
 

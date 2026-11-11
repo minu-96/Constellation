@@ -23,6 +23,8 @@ namespace Constellation
         [NonSerialized] public AiClient aiClient;
         [NonSerialized] public FallbackStore fallback;
         [NonSerialized] public GatherEffect gatherEffect;
+        [NonSerialized] public ResultView resultView;
+        [NonSerialized] public CardService cardService;
 
         /// <summary>상태가 바뀐 뒤에 알린다(이전 상태, 새 상태).</summary>
         public event Action<SessionState, SessionState> StateChanged;
@@ -39,6 +41,8 @@ namespace Constellation
         string m_ResultName;
         string m_ResultStory;
         bool m_AiDone;
+        bool m_CardQrShown;
+        float m_CardReadyTime;
 
         // ---- 타이머
         float m_StateEnterTime;
@@ -49,9 +53,6 @@ namespace Constellation
         float m_IdleReadyTime;
         bool m_SawNoHandsSinceEnd = true;
         bool m_Started;
-
-        // 아직 구현되지 않은 상태를 자동으로 넘기는 시간(초). 뼈대 확인용.
-        const float k_PlaceholderSeconds = 2f;
 
         float Now { get { return Time.unscaledTime; } }
         float StateSeconds { get { return Now - m_StateEnterTime; } }
@@ -159,13 +160,25 @@ namespace Constellation
                 case SessionState.Result:
                     EnsureResult();
                     guide.ClearAlert();
-                    // 결과 화면이 생기기 전까지는 안내 글자로 이름과 이야기를 보여 준다.
-                    guide.SetElevation(config.guideElevationIdle);
-                    guide.SetTitle(m_ResultName ?? string.Empty);
-                    guide.SetHint(m_ResultStory ?? string.Empty);
+                    guide.SetTitle(string.Empty);
+                    guide.SetHint(string.Empty);
+                    starField.SetCandidatesVisible(false);
+                    starField.RaiseToSky(true);
+                    resultView.Show(m_ResultName, m_ResultStory, m_AnchorPosition, m_AnchorRotation);
+                    // 카드 화면에서 QR이 바로 보이도록 업로드를 미리 시작한다.
+                    cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg);
                     break;
 
                 case SessionState.Card:
+                    m_CardQrShown = false;
+                    m_CardReadyTime = -1f;
+                    if (!cardService.HasFailed)
+                    {
+                        resultView.Hide();
+                        cardService.Show(m_AnchorPosition, m_AnchorRotation, m_CaptureTexture, m_ResultName, m_ResultStory);
+                        guide.SetElevation(config.guideElevation);
+                        guide.SetHint(config.msgCardWaiting);
+                    }
                     break;
             }
         }
@@ -319,8 +332,22 @@ namespace Constellation
 
         void UpdateCard()
         {
-            // 결과 카드가 생기기 전까지는 곧바로 대기 화면으로 돌아간다.
-            Go(SessionState.Idle);
+            // 카드 생성이나 업로드에 실패하면 카드 없이 끝낸다.
+            if (cardService.HasFailed)
+            {
+                Go(SessionState.Idle);
+                return;
+            }
+
+            if (cardService.IsReady && !m_CardQrShown)
+            {
+                m_CardQrShown = true;
+                m_CardReadyTime = Now;
+                guide.SetHint(config.msgCardReady);
+            }
+
+            if (m_CardQrShown && Now - m_CardReadyTime >= config.cardSeconds)
+                Go(SessionState.Idle);
         }
 
         // 손 인식 실패와 무입력 안내. 상황이 풀리면 사라진다(F-15).
@@ -477,6 +504,10 @@ namespace Constellation
             aiClient.Cancel();
             gatherEffect.Stop();
             ReleaseCapture();
+            m_CardQrShown = false;
+            m_CardReadyTime = -1f;
+            resultView.Hide();
+            cardService.Clear();
             guide.ClearAll();
         }
     }
