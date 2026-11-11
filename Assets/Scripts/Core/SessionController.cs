@@ -179,8 +179,8 @@ namespace Constellation
                     {
                         resultView.Hide();
                         cardService.Show(m_AnchorPosition, m_AnchorRotation, m_CaptureTexture, m_ResultName, m_ResultStory);
-                        guide.SetElevation(config.guideElevation);
-                        guide.SetHint(config.msgCardWaiting);
+                        // 안내 문구는 카드 안에 있으므로 하늘의 안내는 비운다.
+                        guide.SetHint(string.Empty);
                     }
                     break;
             }
@@ -346,7 +346,6 @@ namespace Constellation
             {
                 m_CardQrShown = true;
                 m_CardReadyTime = Now;
-                guide.SetHint(config.msgCardReady);
             }
 
             if (m_CardQrShown && Now - m_CardReadyTime >= config.cardSeconds)
