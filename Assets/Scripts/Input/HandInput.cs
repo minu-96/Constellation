@@ -306,10 +306,10 @@ namespace Constellation
         // 헤드셋 없이 흐름을 확인하기 위한 것. 빌드에는 들어가지 않는다.
         //   마우스 이동: 오른손 위치      마우스 왼쪽 버튼: 핀치
         //   휠: 손까지의 거리            H: 손 숨기기/보이기(기본은 보임)
-        //   Space(누르고 있기) 또는 마우스 오른쪽 클릭(토글): 양손 모으기   Z: 되돌리기(GestureDetector가 처리)
+        //   Space(누르고 있기) 또는 마우스 오른쪽 클릭: 왼손 꺼짐→떨어짐→모음 순환   Z: 되돌리기(GestureDetector가 처리)
         bool m_SimHandVisible = true; // 에디터에서는 기본으로 켜 둔다(H로 끄기)
         bool m_SimWarned;
-        bool m_SimBothHands;
+        int m_SimBothMode;
         float m_SimLogTime;
         float m_SimDepth = 0.5f;
 
@@ -347,10 +347,15 @@ namespace Constellation
             FillSimulatedHand(right, point, mouse.leftButton.isPressed);
 
             HandState left = m_Hands[0];
-            // 마우스 오른쪽 클릭으로도 양손 모으기를 켜고 끌 수 있다(키 입력이 안 먹는 환경용).
+            // 마우스 오른쪽 클릭(키 입력이 안 먹는 환경용): 끔 → 두 손 떨어뜨림 → 두 손 모음 → 끔 순으로 돈다.
+            // 완성 제스처는 한 번 떼었다가 모아야 인식하므로 '떨어뜨림' 단계가 필요하다.
             if (mouse.rightButton.wasPressedThisFrame)
-                m_SimBothHands = !m_SimBothHands;
-            if (keyboard.spaceKey.isPressed || m_SimBothHands)
+                m_SimBothMode = (m_SimBothMode + 1) % 3;
+            if (keyboard.spaceKey.isPressed)
+                FillSimulatedHand(left, point - m_Camera.transform.right * 0.05f, false);
+            else if (m_SimBothMode == 1)
+                FillSimulatedHand(left, point - m_Camera.transform.right * 0.3f, false);
+            else if (m_SimBothMode == 2)
                 FillSimulatedHand(left, point - m_Camera.transform.right * 0.05f, false);
             else
                 left.ClearTracking();
