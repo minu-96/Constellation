@@ -79,6 +79,7 @@ namespace Constellation
         Camera m_Camera;
         XRHandSubsystem m_Subsystem;
         float m_NextSubsystemSearch;
+        bool m_NullWarned;
 
         public void Init(ConstellationConfig config, Transform trackingOrigin, Camera headCamera)
         {
@@ -95,7 +96,14 @@ namespace Constellation
         void Update()
         {
             if (m_Config == null)
+            {
+                if (!m_NullWarned)
+                {
+                    m_NullWarned = true;
+                    Debug.LogWarning("[HandInput] Init이 호출되지 않았거나 config가 없음");
+                }
                 return;
+            }
 
             FindSubsystem();
 
@@ -301,6 +309,7 @@ namespace Constellation
         //   Space(누르고 있기): 양손 모으기   Z: 되돌리기(GestureDetector가 처리)
         bool m_SimHandVisible = true; // 에디터에서는 기본으로 켜 둔다(H로 끄기)
         bool m_SimWarned;
+        float m_SimLogTime;
         float m_SimDepth = 0.5f;
 
         bool SimulateHands()
@@ -315,6 +324,12 @@ namespace Constellation
                     Debug.LogWarning("[HandInput] 시뮬레이션 불가: keyboard=" + (keyboard != null) + " mouse=" + (mouse != null) + " camera=" + (m_Camera != null));
                 }
                 return false;
+            }
+
+            if (Time.unscaledTime >= m_SimLogTime)
+            {
+                m_SimLogTime = Time.unscaledTime + 3f;
+                Debug.Log("[HandInput] 시뮬 상태: visible=" + m_SimHandVisible + " mouse=" + mouse.position.ReadValue() + " hKey=" + keyboard.hKey.isPressed + " config.sim=" + m_Config.editorSimulation);
             }
 
             if (keyboard.hKey.wasPressedThisFrame)
