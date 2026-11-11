@@ -35,11 +35,27 @@ namespace Constellation
             GuideUI guide = Create<GuideUI>("Guide UI");
             guide.Init(config, headCamera.transform);
 
+            GestureDetector gestures = Create<GestureDetector>("Gesture Detector");
+            gestures.Init(config, hands, headCamera.transform);
+
+            KeywordSelector keywordSelector = Create<KeywordSelector>("Keyword Selector");
+            keywordSelector.Init(config, hands);
+
+            StarField starField = Create<StarField>("Star Field");
+            starField.Init(config);
+
+            ConstellationDrawer drawer = Create<ConstellationDrawer>("Constellation Drawer");
+            drawer.Init(config, hands, starField);
+
             SessionController session = Create<SessionController>("Session Controller");
             session.config = config;
             session.head = headCamera.transform;
             session.hands = hands;
             session.guide = guide;
+            session.gestures = gestures;
+            session.keywordSelector = keywordSelector;
+            session.starField = starField;
+            session.drawer = drawer;
             session.Begin();
         }
 

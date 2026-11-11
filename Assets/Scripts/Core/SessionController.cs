@@ -15,6 +15,10 @@ namespace Constellation
         [NonSerialized] public Transform head;
         [NonSerialized] public HandInput hands;
         [NonSerialized] public GuideUI guide;
+        [NonSerialized] public GestureDetector gestures;
+        [NonSerialized] public KeywordSelector keywordSelector;
+        [NonSerialized] public StarField starField;
+        [NonSerialized] public ConstellationDrawer drawer;
 
         /// <summary>상태가 바뀐 뒤에 알린다(이전 상태, 새 상태).</summary>
         public event Action<SessionState, SessionState> StateChanged;
@@ -25,6 +29,7 @@ namespace Constellation
         KeywordDefinition m_Keyword;
         Vector3 m_AnchorPosition;
         Quaternion m_AnchorRotation = Quaternion.identity;
+        int m_StarCount;
         string m_ResultName;
         string m_ResultStory;
 
@@ -48,6 +53,12 @@ namespace Constellation
         public void Begin()
         {
             hands.PinchStarted += OnPinchStarted;
+            keywordSelector.Selected += OnKeywordSelected;
+            drawer.StarAdded += OnStarAdded;
+            drawer.MaxReached += OnMaxStarsReached;
+            drawer.Undone += OnUndone;
+            gestures.HandsTogether += OnHandsTogether;
+            gestures.UndoRequested += OnUndoRequested;
 
             m_Started = true;
             State = SessionState.Idle;
@@ -59,6 +70,19 @@ namespace Constellation
         {
             if (hands != null)
                 hands.PinchStarted -= OnPinchStarted;
+            if (keywordSelector != null)
+                keywordSelector.Selected -= OnKeywordSelected;
+            if (drawer != null)
+            {
+                drawer.StarAdded -= OnStarAdded;
+                drawer.MaxReached -= OnMaxStarsReached;
+                drawer.Undone -= OnUndone;
+            }
+            if (gestures != null)
+            {
+                gestures.HandsTogether -= OnHandsTogether;
+                gestures.UndoRequested -= OnUndoRequested;
+            }
         }
 
         // ================================================================ 상태 전환
@@ -100,11 +124,15 @@ namespace Constellation
                     guide.SetElevation(config.guideElevation);
                     guide.SetTitle(config.msgKeywordQuestion);
                     guide.SetHint(config.msgKeywordHint);
+                    keywordSelector.Show(m_AnchorPosition, m_AnchorRotation);
                     break;
 
                 case SessionState.Drawing:
                     guide.SetTitle(string.Empty);
                     guide.SetHint(config.msgDrawingHint);
+                    drawer.Begin();
+                    gestures.ResetGestures();
+                    gestures.Detecting = true;
                     break;
 
                 case SessionState.Capture:
@@ -133,6 +161,15 @@ namespace Constellation
         {
             switch (state)
             {
+                case SessionState.KeywordSelect:
+                    keywordSelector.Hide();
+                    break;
+
+                case SessionState.Drawing:
+                    drawer.End();
+                    gestures.Detecting = false;
+                    break;
+
                 case SessionState.Card:
                     // 체험이 끝났다. 같은 사람이 손을 든 채로 곧바로 다시 시작되지 않게 잠시 쉰다.
                     m_IdleReadyTime = Now + config.endCooldownSeconds;
@@ -198,12 +235,6 @@ namespace Constellation
 
         void UpdateKeywordSelect()
         {
-            // 키워드 선택 UI가 생기기 전까지는 첫 키워드로 자동 진행한다.
-            if (m_Keyword == null && StateSeconds >= k_PlaceholderSeconds)
-            {
-                m_Keyword = config.keywords[0];
-                m_KeywordChosenTime = Now;
-            }
             if (m_Keyword != null)
             {
                 // 선택 효과를 잠깐 보여 준 뒤 넘어간다.
@@ -219,11 +250,6 @@ namespace Constellation
 
         void UpdateDrawing()
         {
-            if (StateSeconds >= k_PlaceholderSeconds)
-            {
-                Go(SessionState.Capture);
-                return;
-            }
             UpdateStickyAlert(config.drawingIdleTimeoutSeconds);
             if (Now - m_LastActivityTime >= config.drawingIdleTimeoutSeconds)
                 Go(SessionState.Idle);
@@ -275,6 +301,71 @@ namespace Constellation
             m_LastActivityTime = Now;
         }
 
+        void OnKeywordSelected(KeywordDefinition keyword)
+        {
+            if (State != SessionState.KeywordSelect || m_Keyword != null || keyword == null)
+                return;
+            m_Keyword = keyword;
+            m_KeywordChosenTime = Now;
+            m_LastActivityTime = Now;
+            guide.SetTitle(keyword.description);
+            guide.SetHint(string.Empty);
+            guide.ClearAlert();
+            // 선택 직후 후보 별을 뿌린다(F-04).
+            starField.Spawn(m_AnchorPosition, m_AnchorRotation);
+        }
+
+        void OnStarAdded(int count)
+        {
+            if (State != SessionState.Drawing)
+                return;
+            m_StarCount = count;
+            m_LastActivityTime = Now;
+            guide.SetHint(count >= config.minStars ? config.msgDrawingHintCanFinish : config.msgDrawingHint);
+            if (count == 2)
+                guide.FlashAlert(UndoHint(), config.alertSeconds + 1f);
+        }
+
+        void OnMaxStarsReached()
+        {
+            if (State != SessionState.Drawing)
+                return;
+            guide.FlashAlert(string.Format(config.msgTooManyStars, config.maxStars), config.alertSeconds);
+        }
+
+        void OnUndoRequested()
+        {
+            if (State != SessionState.Drawing)
+                return;
+            m_LastActivityTime = Now;
+            drawer.Undo();
+        }
+
+        void OnUndone(int count)
+        {
+            m_StarCount = count;
+            guide.SetHint(count >= config.minStars ? config.msgDrawingHintCanFinish : config.msgDrawingHint);
+        }
+
+        void OnHandsTogether()
+        {
+            if (State != SessionState.Drawing)
+                return;
+            m_LastActivityTime = Now;
+            m_StarCount = drawer.Count;
+            if (m_StarCount < config.minStars)
+            {
+                guide.FlashAlert(config.msgNeedMoreStars, config.alertSeconds);
+                return;
+            }
+            Go(SessionState.Capture);
+        }
+
+        string UndoHint()
+        {
+            return config.undoGesture == UndoGestureType.MiddlePinch ? config.msgUndoHintMiddlePinch : config.msgUndoHintSwipe;
+        }
+
         // ================================================================ 보조
 
         // 체험의 기준점. 이 순간의 머리 위치와 바라보는 방향(수평)으로 정한다.
@@ -296,6 +387,11 @@ namespace Constellation
             m_ResultName = null;
             m_ResultStory = null;
             m_HandHoldSeconds = 0f;
+            m_StarCount = 0;
+            gestures.Detecting = false;
+            keywordSelector.Hide();
+            drawer.Clear();
+            starField.Clear();
             guide.ClearAll();
         }
     }
