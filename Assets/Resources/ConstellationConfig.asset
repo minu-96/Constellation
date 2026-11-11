@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56a06fb56f13f3cb83e74ba96da9636b, type: 3}
   m_Name: ConstellationConfig
   m_EditorClassIdentifier: 
+  fallbackStoriesJson: {fileID: 4900000, guid: 883635021f5901f2738a4ec8ac22dd97, type: 3}
