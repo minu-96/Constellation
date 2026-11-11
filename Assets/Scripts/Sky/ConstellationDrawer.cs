@@ -26,6 +26,8 @@ namespace Constellation
         bool m_Active;
         float m_Grow = 1f;
         float m_NextMaxNotice;
+        // 별 잇기가 시작된 뒤에 새로 쥔 핀치만 끌어서 잇기에 쓴다(키워드를 고르던 핀치가 이어져 별이 잡히지 않게).
+        readonly bool[] m_DragArmed = new bool[2];
 
         const float k_GrowSeconds = 0.22f;
 
@@ -54,6 +56,7 @@ namespace Constellation
         public void Begin()
         {
             m_Active = true;
+            m_DragArmed[0] = m_DragArmed[1] = false;
         }
 
         /// <summary>별 잇기를 멈춘다. 그어 둔 선은 남는다.</summary>
@@ -94,6 +97,7 @@ namespace Constellation
         {
             if (!m_Active)
                 return;
+            m_DragArmed[(int)side] = true;
             TrySelect(position, m_Config.starGrabRadius);
         }
 
@@ -139,11 +143,15 @@ namespace Constellation
             if (m_Config.selectWhileDragging)
             {
                 float dragRadius = m_Config.starGrabRadius * m_Config.dragGrabRadiusScale;
-                if (left.isTracked && left.isPinching)
+                if (left.isTracked && left.isPinching && m_DragArmed[0])
                     TrySelect(left.pinchPoint, dragRadius);
-                if (right.isTracked && right.isPinching)
+                if (right.isTracked && right.isPinching && m_DragArmed[1])
                     TrySelect(right.pinchPoint, dragRadius);
             }
+            if (!left.isPinching)
+                m_DragArmed[0] = false;
+            if (!right.isPinching)
+                m_DragArmed[1] = false;
         }
 
         void LateUpdate()
