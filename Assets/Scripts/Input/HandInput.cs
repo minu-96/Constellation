@@ -300,6 +300,7 @@ namespace Constellation
         //   휠: 손까지의 거리            H: 손 보이기/숨기기
         //   Space(누르고 있기): 양손 모으기   Z: 되돌리기(GestureDetector가 처리)
         bool m_SimHandVisible;
+        bool m_SimWarned;
         float m_SimDepth = 0.5f;
 
         bool SimulateHands()
@@ -307,10 +308,20 @@ namespace Constellation
             Keyboard keyboard = Keyboard.current;
             Mouse mouse = Mouse.current;
             if (keyboard == null || mouse == null || m_Camera == null)
+            {
+                if (!m_SimWarned)
+                {
+                    m_SimWarned = true;
+                    Debug.LogWarning("[HandInput] 시뮬레이션 불가: keyboard=" + (keyboard != null) + " mouse=" + (mouse != null) + " camera=" + (m_Camera != null));
+                }
                 return false;
+            }
 
             if (keyboard.hKey.wasPressedThisFrame)
+            {
                 m_SimHandVisible = !m_SimHandVisible;
+                Debug.Log("[HandInput] 시뮬레이션 손 " + (m_SimHandVisible ? "켜짐" : "꺼짐"));
+            }
             if (!m_SimHandVisible)
                 return false;
 
