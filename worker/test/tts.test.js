@@ -25,6 +25,18 @@ describe("POST /tts", () => {
     expect(JSON.parse(init.body).audioConfig.audioEncoding).toBe("LINEAR16");
   });
 
+  it("속도 설정: 기본 0.92, 범위 안이면 적용, 0이면 보내지 않는다", async () => {
+    const rateOf = async (env) => {
+      const { send, fetchMock } = setup();
+      await send(ttsReq({ text: "안녕하세요" }), env);
+      return JSON.parse(fetchMock.mock.calls[0][1].body).audioConfig.speakingRate;
+    };
+    expect(await rateOf(ENV)).toBe(0.92);
+    expect(await rateOf({ ...ENV, TTS_SPEAKING_RATE: "1.1" })).toBe(1.1);
+    expect(await rateOf({ ...ENV, TTS_SPEAKING_RATE: "0" })).toBeUndefined();
+    expect(await rateOf({ ...ENV, TTS_SPEAKING_RATE: "9" })).toBe(0.92);
+  });
+
   it("토큰이 없거나 틀리면 401", async () => {
     const { send, fetchMock } = setup();
     expect((await send(ttsReq({ text: "안녕하세요" }, { token: null }))).status).toBe(401);

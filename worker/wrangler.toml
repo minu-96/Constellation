@@ -13,8 +13,9 @@ CLAUDE_TIMEOUT_MS = "9000"
 # 기기당 분당 호출 횟수. 기기 테스트 후 조정.
 RATE_LIMIT_PER_MINUTE = "6"
 # 낭독(Google Cloud TTS) 음성과 속도. 음성 이름은 Google 음성 목록에서 확인한다.
-TTS_VOICE = "ko-KR-Neural2-A"
-TTS_SPEAKING_RATE = "0.92"
+TTS_VOICE = "ko-KR-Chirp3-HD-Despina"
+# 0.5~1.5. "0"이면 속도를 보내지 않는다(Chirp 3 HD가 속도 조절을 받지 않으면 0으로).
+TTS_SPEAKING_RATE = "0"
 # 결과 카드 보관 기간(일)
 CARD_TTL_DAYS = "30"
 

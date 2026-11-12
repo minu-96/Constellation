@@ -55,15 +55,18 @@ export async function handleTts(request, env, deps) {
 
   if (!env.GOOGLE_TTS_API_KEY) return json(500, { error: "server_misconfigured" });
 
-  const rate = Number.parseFloat(env.TTS_SPEAKING_RATE ?? "");
+  // 속도: TTS_SPEAKING_RATE가 0.5~1.5면 적용하고, "0"이나 빈 값이면 보내지 않는다(음성이 속도 조절을 지원하지 않을 때).
+  const rawRate = env.TTS_SPEAKING_RATE;
+  const rate = Number.parseFloat(rawRate ?? "");
+  let speakingRate = DEFAULT_RATE;
+  if (rawRate !== undefined && (rawRate === "" || rate === 0)) speakingRate = undefined;
+  else if (Number.isFinite(rate) && rate >= 0.5 && rate <= 1.5) speakingRate = rate;
+  const audioConfig = { audioEncoding: "LINEAR16", sampleRateHertz: SAMPLE_RATE };
+  if (speakingRate !== undefined) audioConfig.speakingRate = speakingRate;
   const payload = {
     input: { text: checked.value.text },
     voice: { languageCode: "ko-KR", name: env.TTS_VOICE || DEFAULT_VOICE },
-    audioConfig: {
-      audioEncoding: "LINEAR16",
-      sampleRateHertz: SAMPLE_RATE,
-      speakingRate: Number.isFinite(rate) && rate >= 0.5 && rate <= 1.5 ? rate : DEFAULT_RATE,
-    },
+    audioConfig,
   };
 
   const doFetch = deps.fetchImpl ?? fetch;
