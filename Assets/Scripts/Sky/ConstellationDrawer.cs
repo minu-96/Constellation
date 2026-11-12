@@ -147,19 +147,31 @@ namespace Constellation
             m_StarField.SetHovered(hoverLeft, hoverRight);
             m_StarField.SetHandPoints(left.isTracked, left.pinchPoint, right.isTracked, right.pinchPoint);
 
-            // 핀치를 유지한 채 다른 별을 지나가면 그 별도 잇는다.
+            // 핀치를 유지한 채 다른 별 쪽으로 끌면 그 별에 붙어 이어진다(머리에서 본 방향 기준).
             if (m_Config.selectWhileDragging)
             {
-                float dragRadius = m_Config.starGrabRadius * m_Config.dragGrabRadiusScale;
                 if (left.isTracked && left.isPinching && m_DragArmed[0])
-                    TrySelect(left.pinchPoint, dragRadius);
+                    DragSelect(left.pinchPoint, ref hoverLeft);
                 if (right.isTracked && right.isPinching && m_DragArmed[1])
-                    TrySelect(right.pinchPoint, dragRadius);
+                    DragSelect(right.pinchPoint, ref hoverRight);
+                m_StarField.SetHovered(hoverLeft, hoverRight);
             }
             if (!left.isPinching)
                 m_DragArmed[0] = false;
             if (!right.isPinching)
                 m_DragArmed[1] = false;
+        }
+
+        // 끌고 있는 손이 가리키는 별을 찾아 잇는다. 아직 잇지 않은 별만 후보로 보여 준다.
+        void DragSelect(Vector3 handPoint, ref int hover)
+        {
+            Camera cam = Camera.main;
+            if (cam == null)
+                return;
+            int index = m_StarField.FindNearestByAngle(handPoint, cam.transform.position, m_Config.dragSnapAngle, m_Config.dragSnapDepthTolerance, true);
+            hover = index;
+            if (index >= 0)
+                TrySelect(m_StarField.GetWorldPosition(index), 0.001f);
         }
 
         void LateUpdate()

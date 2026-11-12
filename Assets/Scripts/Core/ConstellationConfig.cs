@@ -141,6 +141,10 @@ namespace Constellation
         public bool selectWhileDragging = true;
         [Tooltip("끌어서 이을 때의 잡기 반경 비율(실수로 잡히는 것을 줄인다)")]
         [Range(0.2f, 1f)] public float dragGrabRadiusScale = 0.6f;
+        [Tooltip("끌어서 이을 때 머리에서 본 방향이 이 각도(도) 안이면 별에 붙는다. 클수록 쉽게 이어진다")]
+        [Range(1f, 12f)] public float dragSnapAngle = 5f;
+        [Tooltip("끌어서 이을 때 손과 별의 거리(깊이) 차이가 이 값(m)을 넘으면 붙지 않는다")]
+        [Range(0.05f, 0.6f)] public float dragSnapDepthTolerance = 0.3f;
         [Tooltip("키워드 아이콘 잡기 반경(m)")]
         public float keywordGrabRadius = 0.09f;
 

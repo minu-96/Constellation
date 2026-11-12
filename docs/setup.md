@@ -82,7 +82,7 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | --- | --- | --- |
 | 핀치 | `pinchStartDistance` / `pinchEndDistance` | 0.022 / 0.04 m |
 | 별 잡기 | `starGrabRadius`, `starHintRange` | 0.05 m, 0.1 m |
-| 별 잡기 | `selectWhileDragging`, `dragGrabRadiusScale` | 켬, 0.6 |
+| 별 잡기 | `selectWhileDragging`, `dragSnapAngle`, `dragSnapDepthTolerance` | 켬, 5도, 0.3m |
 | 키워드 | `keywordGrabRadius` | 0.09 m |
 | 손 표시 | `handFingerWidth`, `handPalmOpacity` | 0.013 m, 0.14 |
 | 손 표시 | `pinchHintRange` (빛이 모이기 시작하는 거리) | 0.06 m |

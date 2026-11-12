@@ -205,6 +205,38 @@ namespace Constellation
             return best;
         }
 
+        /// <summary>
+        /// 머리에서 본 방향이 손과 가까운 별을 찾는다(끌어서 잇기용). 손 깊이가 조금 달라도 붙도록
+        /// 각도로 비교하고, 손이 별보다 너무 멀거나 가까우면(깊이 차이) 제외한다. 없으면 -1.
+        /// </summary>
+        public int FindNearestByAngle(Vector3 handPosition, Vector3 headPosition, float maxAngleDegrees, float depthTolerance, bool skipSelected)
+        {
+            Vector3 handDir = handPosition - headPosition;
+            float handDist = handDir.magnitude;
+            if (handDist < 0.01f)
+                return -1;
+            handDir /= handDist;
+
+            int best = -1;
+            float bestAngle = maxAngleDegrees;
+            for (int i = 0; i < m_Stars.Count; i++)
+            {
+                if (skipSelected && IsSelected(i))
+                    continue;
+                Vector3 toStar = m_Stars[i].transform.position - headPosition;
+                float starDist = toStar.magnitude;
+                if (starDist < 0.01f || Mathf.Abs(starDist - handDist) > depthTolerance)
+                    continue;
+                float angle = Vector3.Angle(handDir, toStar / starDist);
+                if (angle <= bestAngle)
+                {
+                    bestAngle = angle;
+                    best = i;
+                }
+            }
+            return best;
+        }
+
         /// <summary>선택하지 않은 후보 별을 보이거나 숨긴다(결과 화면에서는 숨긴다).</summary>
         public void SetCandidatesVisible(bool visible)
         {
