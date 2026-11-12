@@ -89,6 +89,15 @@ namespace Constellation
             session.cardService = cardService;
             session.audioManager = audioManager;
             session.Begin();
+
+            if (config.showFpsOverlay && (Application.isEditor || Debug.isDebugBuild))
+                Create<FpsOverlay>("FPS Overlay").Init(config, headCamera.transform);
+
+#if UNITY_EDITOR
+            // 메뉴 Constellation > 스크린샷 찍기로 시작했을 때만 자동 촬영을 돌린다.
+            if (ScreenshotDirector.Requested)
+                Create<ScreenshotDirector>("Screenshot Director").Init(config, session, hands, keywordSelector, starField, headCamera.transform);
+#endif
         }
 
         T Create<T>(string objectName) where T : Component

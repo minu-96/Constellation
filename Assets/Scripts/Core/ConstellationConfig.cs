@@ -403,6 +403,8 @@ namespace Constellation
         [Header("개발용")]
         [Tooltip("에디터에서 헤드셋 없이 마우스·키보드로 손을 흉내 낸다")]
         public bool editorSimulation = true;
+        [Tooltip("프레임 수와 프레임 시간을 화면 아래에 띄운다(에디터와 개발 빌드에서만). 전시 빌드에서는 끈다")]
+        public bool showFpsOverlay = false;
         [Tooltip("상태 전환을 콘솔에 남긴다")]
         public bool logStateChanges = true;
 
