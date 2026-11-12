@@ -94,6 +94,27 @@ describe("카드 보기", () => {
     expect(page).not.toContain(TEST_ENV.APP_SHARED_TOKEN);
   });
 
+  it("번호, 날짜, 저장 버튼이 있고 스크립트는 nonce가 붙은 것만 허용한다", async () => {
+    const t = setup();
+    const env = { ...TEST_ENV, CARDS: fakeKv() };
+    const { id } = await (await t.send(post(cardBody({ points: [[0.1, 0.1], [0.9, 0.9]] })), env)).json();
+    const res = await t.send(view(`/card/${id}`), env);
+    const page = await res.text();
+    expect(page).toContain("1번째 별자리");
+    expect(page).toMatch(/<p class="date" id="date">\d{4}\.\d{2}\.\d{2}<\/p>/);
+    expect(page).toContain("카드 이미지로 저장");
+
+    const csp = res.headers.get("Content-Security-Policy");
+    const nonce = /script-src 'nonce-([0-9a-f]{32})'/.exec(csp)?.[1];
+    expect(nonce).toBeTruthy();
+    expect(page).toContain(`<script nonce="${nonce}">`);
+    // 스크립트 태그는 저장 버튼용 하나뿐이다.
+    expect(page.match(/<script/g)).toHaveLength(1);
+    // 요청마다 nonce가 다르다.
+    const again = (await t.send(view(`/card/${id}`), env)).headers.get("Content-Security-Policy");
+    expect(again).not.toBe(csp);
+  });
+
   it("없는 카드는 404", async () => {
     const t = setup();
     const res = await t.send(view("/card/abcdefghijkm"), { ...TEST_ENV, CARDS: fakeKv() });
