@@ -23,11 +23,12 @@ Main 씬을 열고 Play 한다. 헤드셋 없이 아래 키로 손을 흉내 낼
 
 | 입력 | 동작 |
 | --- | --- |
-| H | 손 보이기 / 숨기기 |
+| H | 손 숨기기 / 보이기 (기본은 보임) |
+| 화살표 키, 마우스 가운데 버튼 드래그 | 둘러보기 (헤드셋이 없을 때만) |
 | 마우스 이동 | 오른손 위치 |
 | 마우스 휠 | 손까지의 거리 |
 | 마우스 왼쪽 버튼 | 핀치 |
-| Space (누르고 있기) | 양손 모으기 |
+| Space (누르고 있기), 마우스 오른쪽 클릭 | 양손 모으기 (오른쪽 클릭은 꺼짐 → 떨어짐 → 모음 순서로 바뀜) |
 | Z | 되돌리기 |
 
 - [ ] H를 누르면 대기 화면에서 키워드 선택으로 넘어간다.
@@ -80,7 +81,7 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 구분 | 항목 | 초깃값 |
 | --- | --- | --- |
 | 핀치 | `pinchStartDistance` / `pinchEndDistance` | 0.022 / 0.04 m |
-| 별 잡기 | `starGrabRadius` | 0.06 m |
+| 별 잡기 | `starGrabRadius`, `starHintRange` | 0.05 m, 0.1 m |
 | 별 잡기 | `selectWhileDragging`, `dragGrabRadiusScale` | 켬, 0.6 |
 | 키워드 | `keywordGrabRadius` | 0.09 m |
 | 양손 모으기 | `handsTogetherDistance` / `handsTogetherReleaseDistance` | 0.11 / 0.2 m |
@@ -91,15 +92,29 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 시간 | `keywordIdleTimeoutSeconds` / `drawingIdleTimeoutSeconds` | 45 / 90초 |
 | 시간 | `resultSeconds` / `cardSeconds` | 14 / 20초 |
 | 시간 | `endCooldownSeconds` / `aiMinWaitSeconds` | 5 / 3초 |
-| 배치 | `starDistance` / `starCenterDrop` | 0.5 / 0.12 m |
-| 배치 | `starAzimuthHalfRange`, `starElevationMin/Max`, `starMinSeparation` | 50°, -20°~32°, 9° |
+| 별 구역 | `posture` | Standing (다른 선택지: Seated, Custom) |
+| 별 구역 | `standingZone` (고도, 좌우, 거리) | +10°~+35°, ±55°, 0.45 m |
+| 별 구역 | `seatedZone` (고도, 좌우, 거리) | +10°~+32°, ±55°, 0.40 m |
+| 별 구역 | `ridgeMaxElevation`, `starRidgeMargin` | 8°, 2° |
+| 별 구역 | `starRows`, `starJitter` | 3줄, 0.35 |
 | 배치 | `guideElevation`, `guideTextSize`, `resultStorySize` | -27°, 0.075 m, 0.095 m |
-| 성능 | `usePostProcessing`, `ambientParticleCount` | 켬, 120 |
+| 성능 | `qualityTier` | Medium (Low / Medium / High) |
+| 성능 | `usePostProcessing`, `ambientParticleCount` | 끔(High에서만 적용), 120 |
 | 캡처 | `captureJpegQuality` | 80 |
 
 중계 서버 쪽 값은 `worker/wrangler.toml`의 `[vars]`에 있다: `RATE_LIMIT_PER_MINUTE`(6), `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CARD_TTL_DAYS`.
 
-어린이는 팔이 짧으므로 `starDistance`와 `starElevationMax`를 먼저 확인한다. 프레임이 떨어지면 `usePostProcessing`을 끈다.
+프레임이 떨어지면 `qualityTier`를 Low로 낮춘다.
+
+### 별 구역
+
+잡는 별은 체험을 시작할 때(손 인식 직후)의 눈 위치와 정면을 기준으로 놓는다. 각도는 눈높이가 0°, 위가 +다.
+
+- 상한은 45°에서 잘리고, 하한은 `ridgeMaxElevation + starRidgeMargin`(기본 10°) 아래로 내려가지 않는다. 그래서 별은 항상 능선보다 위에 보인다.
+- 별이 눈높이보다 위에 있으므로 팔은 어깨보다 올라간다. 계산상 평균 45°, 가장 높은 별에서 60° 정도 올린다. 힘들어 보이면 `elevationMax`를 낮추거나 `distance`를 줄인다.
+- 어린이는 팔이 짧다. `distance`를 0.35~0.40으로 줄여 확인한다.
+- 구역을 좁히면 별 사이가 가까워져 옆 별이 잡히기 쉽다. 그럴 때는 `candidateStarCount`를 줄이거나 `starGrabRadius`를 줄인다.
+- 머리를 많이 움직이면(숙이거나 앉으면) 가까운 별이 능선 쪽으로 내려와 보일 수 있다. 기준은 시작 순간의 눈 위치다.
 
 ## 구현하면서 정한 것
 
