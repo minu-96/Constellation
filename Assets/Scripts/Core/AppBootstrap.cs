@@ -47,6 +47,12 @@ namespace Constellation
             ConstellationDrawer drawer = Create<ConstellationDrawer>("Constellation Drawer");
             drawer.Init(config, hands, starField);
 
+            GestureGuide gestureGuide = Create<GestureGuide>("Gesture Guide");
+            gestureGuide.Init(handVisual, headCamera.transform);
+
+            FinishButton finishButton = Create<FinishButton>("Finish Button");
+            finishButton.Init(config, hands);
+
             CompletionEffect completionEffect = Create<CompletionEffect>("Completion Effect");
             completionEffect.Init(config, starField, drawer);
 
@@ -81,6 +87,8 @@ namespace Constellation
             session.starField = starField;
             session.drawer = drawer;
             session.completionEffect = completionEffect;
+            session.gestureGuide = gestureGuide;
+            session.finishButton = finishButton;
             session.capture = capture;
             session.aiClient = aiClient;
             session.fallback = fallback;

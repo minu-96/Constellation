@@ -20,6 +20,8 @@ namespace Constellation
         [NonSerialized] public StarField starField;
         [NonSerialized] public ConstellationDrawer drawer;
         [NonSerialized] public CompletionEffect completionEffect;
+        [NonSerialized] public GestureGuide gestureGuide;
+        [NonSerialized] public FinishButton finishButton;
         [NonSerialized] public CaptureService capture;
         [NonSerialized] public AiClient aiClient;
         [NonSerialized] public FallbackStore fallback;
@@ -49,6 +51,7 @@ namespace Constellation
         // ---- 타이머
         float m_StateEnterTime;
         float m_LastActivityTime;
+        float m_LastStarTime;
         float m_NoHandSeconds;
         float m_HandHoldSeconds;
         float m_KeywordChosenTime = -1f;
@@ -70,6 +73,8 @@ namespace Constellation
             gestures.HandsTogether += OnHandsTogether;
             gestures.UndoRequested += OnUndoRequested;
             completionEffect.StarReached += OnCompletionStarReached;
+            drawer.Missed += OnMissed;
+            finishButton.Pressed += OnFinishPressed;
 
             m_Started = true;
             State = SessionState.Idle;
@@ -88,9 +93,12 @@ namespace Constellation
                 drawer.StarAdded -= OnStarAdded;
                 drawer.MaxReached -= OnMaxStarsReached;
                 drawer.Undone -= OnUndone;
+                drawer.Missed -= OnMissed;
             }
             if (completionEffect != null)
                 completionEffect.StarReached -= OnCompletionStarReached;
+            if (finishButton != null)
+                finishButton.Pressed -= OnFinishPressed;
             if (gestures != null)
             {
                 gestures.HandsTogether -= OnHandsTogether;
@@ -215,11 +223,14 @@ namespace Constellation
             {
                 case SessionState.KeywordSelect:
                     keywordSelector.Hide();
+                    gestureGuide.Hide();
                     break;
 
                 case SessionState.Drawing:
                     drawer.End();
                     gestures.Detecting = false;
+                    gestureGuide.Hide();
+                    finishButton.Hide();
                     break;
 
                 case SessionState.AiRequest:
@@ -299,6 +310,12 @@ namespace Constellation
                 return;
             }
 
+            // 한동안 아무것도 집지 않으면 가운데 아이콘 앞에서 핀치 시범을 보여 준다.
+            if (config.enableGestureGuide && hands.AnyHandTracked && Now - m_LastActivityTime >= config.pinchGuideDelaySeconds && keywordSelector.OrbCount > 0)
+                gestureGuide.ShowPinch(keywordSelector.GetOrbPosition(keywordSelector.OrbCount / 2) + Vector3.up * 0.09f);
+            else
+                gestureGuide.Hide();
+
             UpdateStickyAlert(config.keywordIdleTimeoutSeconds);
             if (Now - m_LastActivityTime >= config.keywordIdleTimeoutSeconds)
                 Go(SessionState.Idle);
@@ -306,9 +323,58 @@ namespace Constellation
 
         void UpdateDrawing()
         {
+            UpdateDrawingGuide();
             UpdateStickyAlert(config.drawingIdleTimeoutSeconds);
             if (Now - m_LastActivityTime >= config.drawingIdleTimeoutSeconds)
                 Go(SessionState.Idle);
+        }
+
+        // 별 잇기에서의 시범: 아직 하나도 못 이었으면 핀치를, 충분히 잇고도 완성하지 않으면 양손 모으기를 보여 준다.
+        void UpdateDrawingGuide()
+        {
+            if (!config.enableGestureGuide || !hands.AnyHandTracked)
+            {
+                gestureGuide.Hide();
+                return;
+            }
+
+            if (m_StarCount == 0 && Now - m_LastActivityTime >= config.pinchGuideDelaySeconds)
+            {
+                int star = starField.FindNearest(ZonePoint(config.ActiveStarZone.elevationMin + 8f), 2f);
+                if (star >= 0)
+                {
+                    gestureGuide.ShowPinch(starField.GetWorldPosition(star));
+                    return;
+                }
+            }
+            else if (m_StarCount >= config.minStars && Now - m_LastStarTime >= config.finishGuideDelaySeconds && Now - m_LastActivityTime >= 2f)
+            {
+                // 시범은 '완성' 별을 가리지 않게 그보다 가깝고 낮은 곳에서 보여 준다.
+                gestureGuide.ShowHandsTogether(m_AnchorPosition + m_AnchorRotation * new Vector3(0f, -0.22f, config.ActiveStarZone.distance * 0.75f));
+                return;
+            }
+            gestureGuide.Hide();
+        }
+
+        // 체험자 정면에서 주어진 고도(도)에 있는 별 구역 위의 한 점
+        Vector3 ZonePoint(float elevation)
+        {
+            Vector3 direction = Quaternion.Euler(-elevation, 0f, 0f) * Vector3.forward;
+            return m_AnchorPosition + m_AnchorRotation * direction * config.ActiveStarZone.distance;
+        }
+
+        // 별을 충분히 이었으면 '완성' 별을 띄우고, 모자라면 숨긴다.
+        void UpdateFinishButton()
+        {
+            if (config.enableFinishButton && State == SessionState.Drawing && m_StarCount >= config.minStars)
+                finishButton.Show(ZonePoint(config.ActiveStarZone.elevationMin - config.finishButtonDrop), m_AnchorRotation);
+            else
+                finishButton.Hide();
+        }
+
+        string FinishHint()
+        {
+            return config.enableFinishButton ? config.msgDrawingHintCanFinish : config.msgDrawingHintHandsOnly;
         }
 
         void UpdateCapture()
@@ -401,6 +467,7 @@ namespace Constellation
             if (State != SessionState.KeywordSelect || m_Keyword != null || keyword == null)
                 return;
             m_Keyword = keyword;
+            gestureGuide.Hide();
             m_KeywordChosenTime = Now;
             m_LastActivityTime = Now;
             guide.SetTitle(keyword.description);
@@ -417,7 +484,9 @@ namespace Constellation
                 return;
             m_StarCount = count;
             m_LastActivityTime = Now;
-            guide.SetHint(count >= config.minStars ? config.msgDrawingHintCanFinish : config.msgDrawingHint);
+            m_LastStarTime = Now;
+            UpdateFinishButton();
+            guide.SetHint(count >= config.minStars ? FinishHint() : config.msgDrawingHint);
             if (count == 2)
                 guide.FlashAlert(UndoHint(), config.alertSeconds + 1f);
             if (count <= 1)
@@ -444,11 +513,34 @@ namespace Constellation
         void OnUndone(int count)
         {
             m_StarCount = count;
-            guide.SetHint(count >= config.minStars ? config.msgDrawingHintCanFinish : config.msgDrawingHint);
+            UpdateFinishButton();
+            guide.SetHint(count >= config.minStars ? FinishHint() : config.msgDrawingHint);
             audioManager.PlayUndo();
         }
 
         void OnHandsTogether()
+        {
+            TryComplete();
+        }
+
+        // '완성' 별을 집었을 때. 양손 모으기와 똑같이 처리한다.
+        void OnFinishPressed()
+        {
+            TryComplete();
+        }
+
+        // 핀치했지만 별이 없었다. 연달아 빗나가면 힌트를 띄운다(잡기 반경은 Drawer가 넓혀 준다).
+        void OnMissed(int streak)
+        {
+            if (State != SessionState.Drawing)
+                return;
+            int every = Mathf.Max(1, config.missHintCount);
+            if (streak % every == 0)
+                guide.FlashAlert(config.msgMissHint, config.alertSeconds);
+        }
+
+        // 완성 판정(F-07): 별이 모자라면 안내만 하고, 충분하면 캡처로 넘어간다.
+        void TryComplete()
         {
             if (State != SessionState.Drawing)
                 return;
@@ -540,6 +632,8 @@ namespace Constellation
             m_StarCount = 0;
             gestures.Detecting = false;
             keywordSelector.Hide();
+            gestureGuide.Hide();
+            finishButton.Hide();
             completionEffect.Stop();
             drawer.Clear();
             starField.Clear();
