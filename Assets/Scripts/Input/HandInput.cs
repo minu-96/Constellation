@@ -449,60 +449,14 @@ namespace Constellation
             m_Origin.rotation = Quaternion.Euler(-m_SimPitch, m_SimYaw, 0f);
         }
 
-        // 손목을 원점으로 한 편 손 모양(m). x: 오른손 기준 새끼손가락 쪽이 +, y: 손끝 방향.
-        // XRHandJointID 순서(Wrist=0 … LittleTip=25).
-        static readonly Vector2[] k_SimPose =
-        {
-            new Vector2(0f, 0f), new Vector2(0f, 0.05f),
-            new Vector2(-0.025f, 0.02f), new Vector2(-0.045f, 0.045f), new Vector2(-0.058f, 0.07f), new Vector2(-0.066f, 0.092f),
-            new Vector2(-0.02f, 0.04f), new Vector2(-0.025f, 0.095f), new Vector2(-0.027f, 0.135f), new Vector2(-0.028f, 0.158f), new Vector2(-0.028f, 0.178f),
-            new Vector2(-0.003f, 0.04f), new Vector2(-0.003f, 0.098f), new Vector2(-0.003f, 0.142f), new Vector2(-0.003f, 0.168f), new Vector2(-0.003f, 0.19f),
-            new Vector2(0.013f, 0.038f), new Vector2(0.016f, 0.092f), new Vector2(0.018f, 0.13f), new Vector2(0.019f, 0.155f), new Vector2(0.019f, 0.175f),
-            new Vector2(0.027f, 0.034f), new Vector2(0.033f, 0.08f), new Vector2(0.037f, 0.108f), new Vector2(0.039f, 0.127f), new Vector2(0.04f, 0.145f),
-        };
-
         // 마우스 위치에 엄지·검지 끝이 오도록 가짜 손을 만든다. 손 표시를 에디터에서 볼 수 있게 관절을 모두 채운다.
         void FillSimulatedHand(HandState state, Vector3 point, bool pinching, bool leftHand)
         {
             Transform cam = m_Camera.transform;
-            Vector3 right = leftHand ? -cam.right : cam.right;
-            Vector3 up = cam.up;
-
-            state.isTracked = true;
-            state.isOpen = !pinching;
+            HandPose.Fill(state, point, cam.right, cam.up, cam.forward, pinching ? 1f : 0f, leftHand);
+            // 시뮬레이션에서는 핀치 여부를 직접 정한다.
             state.isPinching = pinching;
-            state.isMiddlePinching = false;
-
-            // 엄지와 검지 끝의 가운데(자세 좌표로 약 (-0.047, 0.135))가 마우스 위치에 오게 손목을 놓는다.
-            Vector3 wrist = point + right * 0.047f - up * 0.135f;
-            for (int i = 0; i < HandState.JointCount; i++)
-            {
-                state.joints[i] = wrist + right * k_SimPose[i].x + up * k_SimPose[i].y;
-                state.jointValid[i] = true;
-            }
-
-            // 엄지(2~5)와 검지(7~10)는 끝이 마우스 위치 양옆에 오도록 구부린다.
-            float gap = pinching ? 0.004f : 0.03f;
-            BendChain(state, 2, 5, point - right * gap, cam.forward);
-            BendChain(state, 7, 10, point + right * gap, cam.forward);
-
-            state.wrist = state.joints[XRHandJointID.Wrist.ToIndex()];
-            state.palm = state.joints[XRHandJointID.Palm.ToIndex()];
-            state.thumbTip = state.joints[XRHandJointID.ThumbTip.ToIndex()];
-            state.indexTip = state.joints[XRHandJointID.IndexTip.ToIndex()];
-            state.middleTip = state.joints[XRHandJointID.MiddleTip.ToIndex()];
-        }
-
-        // 사슬의 뿌리는 그대로 두고 끝을 목표로 옮긴다. 가운데 관절은 살짝 앞으로 굽힌다.
-        static void BendChain(HandState state, int first, int last, Vector3 tip, Vector3 forward)
-        {
-            Vector3 root = state.joints[first];
-            int steps = last - first;
-            for (int i = 1; i <= steps; i++)
-            {
-                float t = i / (float)steps;
-                state.joints[first + i] = Vector3.Lerp(root, tip, t) - forward * (0.012f * Mathf.Sin(t * Mathf.PI));
-            }
+            state.isOpen = !pinching;
         }
 #endif
     }
