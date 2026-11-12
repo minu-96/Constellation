@@ -345,9 +345,25 @@ namespace Constellation
         [Header("후처리 (기기 성능 테스트 후 조정)")]
         [Tooltip("URP 후처리(블룸·비네트·색 보정)를 켠다. 품질 단계가 High일 때만 적용된다. Quest에서는 화면 전체를 여러 번 다시 그려 비용이 크므로 기본은 끔")]
         public bool usePostProcessing = false;
+        [Tooltip("블룸 세기. 별빛이 번지는 정도")]
         public float bloomIntensity = 0.9f;
+        [Tooltip("이 밝기보다 밝은 곳만 번진다. 낮추면 더 많이 번지지만 화면이 뿌옇게 된다")]
         public float bloomThreshold = 0.8f;
-        public float vignetteIntensity = 0.28f;
+        [Tooltip("번짐이 퍼지는 넓이")]
+        [Range(0f, 1f)] public float bloomScatter = 0.65f;
+        [Tooltip("블룸을 4분의 1 해상도에서 계산한다(가볍다). 끄면 2분의 1 해상도(무겁고 선명하다)")]
+        public bool bloomQuarterResolution = true;
+        [Tooltip("블룸 반복 횟수. 적을수록 가볍다")]
+        [Range(2, 6)] public int bloomIterations = 3;
+        [Tooltip("후처리 비네트 세기. 하늘 셰이더의 비네트(skyVignette)와 겹치므로 작게 둔다. 0이면 끈다")]
+        [Range(0f, 1f)] public float vignetteIntensity = 0.15f;
+        [Tooltip("Neutral 톤매핑을 켠다. URP 에셋에서 HDR을 켰을 때만 의미가 있다(지금 프로젝트는 HDR 꺼짐)")]
+        public bool postTonemapping = false;
+        [Tooltip("후처리 대비와 채도 보정")]
+        public float postContrast = 8f;
+        public float postSaturation = 6f;
+        [Tooltip("필름 그레인 세기. VR에서는 두 눈에 다른 잡음이 보여 거슬릴 수 있으므로 기본은 0(끔)")]
+        [Range(0f, 1f)] public float filmGrainIntensity = 0f;
         [Tooltip("하늘에 떠다니는 먼지 별빛 입자 수. 0이면 끈다. 품질 단계가 Low면 꺼진다")]
         public int ambientParticleCount = 120;
 

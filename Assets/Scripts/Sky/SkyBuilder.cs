@@ -199,7 +199,9 @@ namespace Constellation
             m_Dust.Play();
         }
 
-        // 블룸, 비네트, 색 보정. 프레임이 떨어지면 설정에서 끈다.
+        // URP 후처리: 블룸, (선택) 톤매핑, 비네트, 색 보정, (선택) 필름 그레인.
+        // 화면 전체를 여러 번 다시 그리므로 Quest에서는 비용이 크다. 품질 단계가 High이고 설정을 켰을 때만 만든다.
+        // 기본 화면은 후처리 없이도 완성되도록 별 후광과 하늘 셰이더의 비네트·잡음으로 처리해 두었다.
         void BuildPostProcessing(Camera headCamera)
         {
             // 후처리는 화면 전체를 여러 번 다시 그린다. High 단계에서 설정을 켰을 때만 쓴다.
@@ -219,18 +221,38 @@ namespace Constellation
             m_Profile = ScriptableObject.CreateInstance<VolumeProfile>();
             m_Profile.name = "Constellation Post (runtime)";
 
+            // 별빛 번짐. 낮은 해상도와 적은 반복으로 비용을 줄인다.
             Bloom bloom = m_Profile.Add<Bloom>(true);
             bloom.intensity.Override(m_Config.bloomIntensity);
             bloom.threshold.Override(m_Config.bloomThreshold);
-            bloom.scatter.Override(0.65f);
+            bloom.scatter.Override(m_Config.bloomScatter);
+            bloom.highQualityFiltering.Override(false);
+            bloom.downscale.Override(m_Config.bloomQuarterResolution ? BloomDownscaleMode.Quarter : BloomDownscaleMode.Half);
+            bloom.maxIterations.Override(Mathf.Clamp(m_Config.bloomIterations, 2, 6));
 
-            Vignette vignette = m_Profile.Add<Vignette>(true);
-            vignette.intensity.Override(m_Config.vignetteIntensity);
-            vignette.smoothness.Override(0.45f);
+            if (m_Config.postTonemapping)
+            {
+                Tonemapping tonemapping = m_Profile.Add<Tonemapping>(true);
+                tonemapping.mode.Override(TonemappingMode.Neutral);
+            }
+
+            if (m_Config.vignetteIntensity > 0.001f)
+            {
+                Vignette vignette = m_Profile.Add<Vignette>(true);
+                vignette.intensity.Override(m_Config.vignetteIntensity);
+                vignette.smoothness.Override(0.45f);
+            }
 
             ColorAdjustments color = m_Profile.Add<ColorAdjustments>(true);
-            color.contrast.Override(8f);
-            color.saturation.Override(6f);
+            color.contrast.Override(m_Config.postContrast);
+            color.saturation.Override(m_Config.postSaturation);
+
+            if (m_Config.filmGrainIntensity > 0.001f)
+            {
+                FilmGrain grain = m_Profile.Add<FilmGrain>(true);
+                grain.type.Override(FilmGrainLookup.Thin1);
+                grain.intensity.Override(m_Config.filmGrainIntensity);
+            }
 
             m_Volume.sharedProfile = m_Profile;
         }
