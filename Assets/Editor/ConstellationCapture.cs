@@ -46,8 +46,8 @@ namespace Constellation.EditorTools
                 return;
 
             EditorSceneManager.OpenScene(k_ScenePath);
-            SessionState.SetBool(ScreenshotDirector.RequestKey, true);
-            SessionState.SetBool(ScreenshotDirector.QuitKey, quitWhenDone);
+            UnityEditor.SessionState.SetBool(ScreenshotDirector.RequestKey, true);
+            UnityEditor.SessionState.SetBool(ScreenshotDirector.QuitKey, quitWhenDone);
             EditorApplication.isPlaying = true;
         }
 
