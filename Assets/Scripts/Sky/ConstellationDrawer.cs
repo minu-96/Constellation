@@ -16,6 +16,8 @@ namespace Constellation
         public event Action MaxReached;
         /// <summary>마지막 별과 선을 지웠을 때. 인자는 남은 별 개수.</summary>
         public event Action<int> Undone;
+        /// <summary>핀치했지만 잡기 반경 안에 별이 없었을 때. 인자는 연달아 빗나간 횟수.</summary>
+        public event Action<int> Missed;
 
         ConstellationConfig m_Config;
         HandInput m_Hands;
@@ -30,6 +32,8 @@ namespace Constellation
         bool m_Active;
         float m_Grow = 1f;
         float m_NextMaxNotice;
+        // 연달아 빗나간 횟수. 빗나갈수록 잡기 반경을 조금씩 넓혀 주고, 별을 잡으면 처음으로 돌아간다.
+        int m_MissStreak;
         // 별 잇기가 시작된 뒤에 새로 쥔 핀치만 끌어서 잇기에 쓴다(키워드를 고르던 핀치가 이어져 별이 잡히지 않게).
         readonly bool[] m_DragArmed = new bool[2];
         // 선 위에서 각 별이 놓인 자리(0~1, 길이 기준). 빛을 별에서 별로 옮길 때 쓴다.
@@ -70,6 +74,7 @@ namespace Constellation
         public void Begin()
         {
             m_Active = true;
+            m_MissStreak = 0;
             m_DragArmed[0] = m_DragArmed[1] = false;
         }
 
@@ -150,13 +155,29 @@ namespace Constellation
             if (!m_Active)
                 return;
             m_DragArmed[(int)side] = true;
-            TrySelect(position, m_Config.starGrabRadius);
+
+            int index = m_StarField.FindNearest(position, GrabRadius);
+            if (index < 0)
+            {
+                // 별이 없는 곳을 집었다. 처음 쓰는 사람이 자주 겪으므로 알려서 힌트를 띄우게 한다.
+                m_MissStreak++;
+                if (Missed != null)
+                    Missed(m_MissStreak);
+                return;
+            }
+            m_MissStreak = 0;
+            // 처음 핀치로 잡을 때는 이미 이은 별도 바로 이을 수 있다.
+            TrySelectIndex(index, false);
         }
 
-        void TrySelect(Vector3 position, float radius)
+        /// <summary>지금의 잡기 반경. 연달아 빗나가면 조금씩 넓어지고(잡기 보조), 별을 잡으면 원래대로 돌아간다.</summary>
+        public float GrabRadius
         {
-            // 처음 핀치로 잡을 때는 이미 이은 별도 바로 이을 수 있다.
-            TrySelectIndex(m_StarField.FindNearest(position, radius), false);
+            get
+            {
+                int steps = Mathf.Min(m_MissStreak, 3);
+                return m_Config.starGrabRadius * (1f + steps * Mathf.Max(0f, m_Config.grabAssistPerMiss));
+            }
         }
 
         // requireDwell: 이미 이은 별로 다시 이을 때 잠시 머물러야 하는지.
@@ -218,8 +239,8 @@ namespace Constellation
             HandState right = m_Hands.Right;
 
             // 손이 가까이 간 별을 밝혀 어느 별이 잡힐지 보여 준다.
-            int hoverLeft = left.isTracked ? m_StarField.FindNearest(left.pinchPoint, m_Config.starGrabRadius) : -1;
-            int hoverRight = right.isTracked ? m_StarField.FindNearest(right.pinchPoint, m_Config.starGrabRadius) : -1;
+            int hoverLeft = left.isTracked ? m_StarField.FindNearest(left.pinchPoint, GrabRadius) : -1;
+            int hoverRight = right.isTracked ? m_StarField.FindNearest(right.pinchPoint, GrabRadius) : -1;
             m_StarField.SetHovered(hoverLeft, hoverRight);
             m_StarField.SetHandPoints(left.isTracked, left.pinchPoint, right.isTracked, right.pinchPoint);
 
