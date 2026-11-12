@@ -118,6 +118,7 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 카드 | `showQrInHeadset`, `cardSeconds` | 끔, 12초 |
 | 모두의 하늘 | `enableSharedSky`, `sharedSkyMaxCount`, `sharedSkyLabelCount` | 켬, 40, 12 |
 | 모두의 하늘 | `sharedSkySize`, `sharedSkyBrightness` | 9°, 0.55 |
+| 키워드별 하늘 | `enableKeywordSky`, `keywordSkyIntensity` | 켬, 1.0 |
 | 연출 | `enableLineFlow`, `lineFlowStrength` | 켬, 0.6 |
 | 연출 | `enableCompletionEffect`, `completionStepSeconds` | 켬, 0.18초 |
 | 성능 | `qualityTier` | Medium (Low / Medium / High) |
@@ -166,6 +167,7 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 
 | 항목 | 정한 내용 | 위치 |
 | --- | --- | --- |
+| 키워드별 하늘 | 키워드를 고르면 하늘이 달라진다. 소원은 유성우, 모험은 오로라, 소중한 사람은 반딧불. 명세에 없던 기능 | `KeywordSky.cs`, `ConstellationAurora.shader` |
 | 모두의 하늘 | 카드를 올릴 때 별자리 모양을 함께 보내 서버 목록에 쌓고 번호를 매긴다. 앱은 `/sky`로 받아 먼 하늘에 그리고, 모니터는 `/wall` 페이지를 띄운다. 명세에 없던 기능 | `worker/src/sky.js`, `SharedSky.cs` |
 | F-12 저장 방식 | Worker의 `/card`가 Cloudflare KV에 30일 보관. 카드는 휴대폰에서 열리는 웹 페이지 | `worker/src/card.js` |
 | 캡처 방식 | 카메라 촬영 대신 별 좌표로 512px 그림을 직접 그림 | `CaptureService.cs` |
@@ -203,6 +205,9 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 - [ ] (선택) High + `usePostProcessing`을 켰을 때도 72fps가 나오는지 본다.
 
 ### 밝기와 화면
+
+- [ ] 키워드 세 개를 각각 골랐을 때 유성우, 오로라, 반딧불이 보이고 별 잇기를 방해하지 않는다(`keywordSkyIntensity`).
+- [ ] 오로라가 잡는 별 뒤에서 너무 밝아 별이 묻히지 않는다.
 
 - [ ] 위쪽과 뒤쪽 하늘에 다른 사람들의 별자리가 작게 보이고, 잡는 별과 헷갈리지 않는다(`sharedSkyBrightness`).
 - [ ] 이름표가 읽히되 눈에 거슬리지 않는다(`sharedSkyLabelCount`).
