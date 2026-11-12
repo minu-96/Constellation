@@ -79,6 +79,7 @@ namespace Constellation
         Camera m_Camera;
         XRHandSubsystem m_Subsystem;
         float m_NextSubsystemSearch;
+        bool m_NullWarned;
 
         public void Init(ConstellationConfig config, Transform trackingOrigin, Camera headCamera)
         {
@@ -95,12 +96,28 @@ namespace Constellation
         void Update()
         {
             if (m_Config == null)
+            {
+                if (!m_NullWarned)
+                {
+                    m_NullWarned = true;
+                    Debug.LogWarning("[HandInput] Init이 호출되지 않았거나 config가 없음");
+                }
                 return;
+            }
 
             FindSubsystem();
 
-            bool hasRealHands = m_Subsystem != null && m_Subsystem.running;
-            if (hasRealHands)
+            bool simulated = false;
+#if UNITY_EDITOR
+            // 에디터에서는 H로 켠 시뮬레이션 손이 있으면 OpenXR 런타임보다 우선한다.
+            simulated = m_Config.editorSimulation && SimulateHands();
+#endif
+            bool hasRealHands = !simulated && m_Subsystem != null && m_Subsystem.running;
+            if (simulated)
+            {
+                IsSimulated = true;
+            }
+            else if (hasRealHands)
             {
                 IsSimulated = false;
                 ReadHand(m_Subsystem.leftHand, m_Hands[0]);
@@ -108,16 +125,9 @@ namespace Constellation
             }
             else
             {
-                bool simulated = false;
-#if UNITY_EDITOR
-                simulated = m_Config.editorSimulation && SimulateHands();
-#endif
-                IsSimulated = simulated;
-                if (!simulated)
-                {
-                    m_Hands[0].ClearTracking();
-                    m_Hands[1].ClearTracking();
-                }
+                IsSimulated = false;
+                m_Hands[0].ClearTracking();
+                m_Hands[1].ClearTracking();
             }
 
             UpdateDerived(HandSide.Left);
@@ -295,9 +305,12 @@ namespace Constellation
         // ---------------------------------------------------------------- 에디터 시뮬레이션
         // 헤드셋 없이 흐름을 확인하기 위한 것. 빌드에는 들어가지 않는다.
         //   마우스 이동: 오른손 위치      마우스 왼쪽 버튼: 핀치
-        //   휠: 손까지의 거리            H: 손 보이기/숨기기
-        //   Space(누르고 있기): 양손 모으기   Z: 되돌리기(GestureDetector가 처리)
-        bool m_SimHandVisible;
+        //   휠: 손까지의 거리            H: 손 숨기기/보이기(기본은 보임)
+        //   Space(누르고 있기) 또는 마우스 오른쪽 클릭: 왼손 꺼짐→떨어짐→모음 순환   Z: 되돌리기(GestureDetector가 처리)
+        bool m_SimHandVisible = true; // 에디터에서는 기본으로 켜 둔다(H로 끄기)
+        bool m_SimWarned;
+        int m_SimBothMode;
+        float m_SimLogTime;
         float m_SimDepth = 0.5f;
 
         bool SimulateHands()
@@ -305,10 +318,20 @@ namespace Constellation
             Keyboard keyboard = Keyboard.current;
             Mouse mouse = Mouse.current;
             if (keyboard == null || mouse == null || m_Camera == null)
+            {
+                if (!m_SimWarned)
+                {
+                    m_SimWarned = true;
+                    Debug.LogWarning("[HandInput] 시뮬레이션 불가: keyboard=" + (keyboard != null) + " mouse=" + (mouse != null) + " camera=" + (m_Camera != null));
+                }
                 return false;
+            }
 
             if (keyboard.hKey.wasPressedThisFrame)
+            {
                 m_SimHandVisible = !m_SimHandVisible;
+                Debug.Log("[HandInput] 시뮬레이션 손 " + (m_SimHandVisible ? "켜짐" : "꺼짐"));
+            }
             if (!m_SimHandVisible)
                 return false;
 
@@ -324,7 +347,15 @@ namespace Constellation
             FillSimulatedHand(right, point, mouse.leftButton.isPressed);
 
             HandState left = m_Hands[0];
+            // 마우스 오른쪽 클릭(키 입력이 안 먹는 환경용): 끔 → 두 손 떨어뜨림 → 두 손 모음 → 끔 순으로 돈다.
+            // 완성 제스처는 한 번 떼었다가 모아야 인식하므로 '떨어뜨림' 단계가 필요하다.
+            if (mouse.rightButton.wasPressedThisFrame)
+                m_SimBothMode = (m_SimBothMode + 1) % 3;
             if (keyboard.spaceKey.isPressed)
+                FillSimulatedHand(left, point - m_Camera.transform.right * 0.05f, false);
+            else if (m_SimBothMode == 1)
+                FillSimulatedHand(left, point - m_Camera.transform.right * 0.3f, false);
+            else if (m_SimBothMode == 2)
                 FillSimulatedHand(left, point - m_Camera.transform.right * 0.05f, false);
             else
                 left.ClearTracking();

@@ -95,6 +95,7 @@ namespace Constellation
 
         void OnPinchStarted(HandSide side, Vector3 position)
         {
+            Debug.Log("[Drawer] 핀치 시작 active=" + m_Active + " 가장 가까운 별=" + m_StarField.FindNearest(position, 1f) + " 반경내=" + m_StarField.FindNearest(position, m_Config.starGrabRadius));
             if (!m_Active)
                 return;
             m_DragArmed[(int)side] = true;
@@ -120,6 +121,7 @@ namespace Constellation
             }
 
             m_Selected.Add(index);
+            Debug.Log("[Drawer] 별 선택 " + index + " 누적 " + m_Selected.Count);
             m_StarField.SetSelected(index, true);
             m_Grow = 0f;
             if (StarAdded != null)
