@@ -63,7 +63,7 @@ namespace Constellation
         // 가까이에서 천천히 떠다니는 별빛 먼지. 공간감을 준다.
         void BuildDust()
         {
-            if (m_Config.ambientParticleCount <= 0)
+            if (m_Config.ambientParticleCount <= 0 || m_Config.qualityTier == QualityTier.Low)
                 return;
 
             GameObject go = new GameObject("Star Dust");
@@ -114,10 +114,12 @@ namespace Constellation
         // 블룸, 비네트, 색 보정. 프레임이 떨어지면 설정에서 끈다.
         void BuildPostProcessing(Camera headCamera)
         {
+            // 후처리는 화면 전체를 여러 번 다시 그린다. High 단계에서 설정을 켰을 때만 쓴다.
+            bool usePost = m_Config.usePostProcessing && m_Config.qualityTier == QualityTier.High;
             UniversalAdditionalCameraData cameraData = headCamera.GetUniversalAdditionalCameraData();
             if (cameraData != null)
-                cameraData.renderPostProcessing = m_Config.usePostProcessing;
-            if (!m_Config.usePostProcessing)
+                cameraData.renderPostProcessing = usePost;
+            if (!usePost)
                 return;
 
             GameObject go = new GameObject("Post Processing");
