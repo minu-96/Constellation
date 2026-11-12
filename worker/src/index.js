@@ -5,6 +5,7 @@
 import { handleCardUpload, handleCardView } from "./card.js";
 import { createAnthropicClient, requestStoryText, parseModelJson, toPositiveInt } from "./claude.js";
 import { checkToken, deviceKey, json, readJsonBody } from "./http.js";
+import { handleSkyList, handleWall } from "./sky.js";
 import { createRateLimiter } from "./rateLimit.js";
 import { validateStory, validateStoryRequest } from "./validate.js";
 
@@ -68,6 +69,10 @@ export function createHandler(deps = {}) {
       if (pathname.startsWith("/card/")) {
         if (request.method !== "GET" && request.method !== "HEAD") return json(405, { error: "method_not_allowed" });
         return handleCardView(pathname.slice("/card/".length), env);
+      }
+      if (pathname === "/sky" || pathname === "/wall") {
+        if (request.method !== "GET" && request.method !== "HEAD") return json(405, { error: "method_not_allowed" });
+        return pathname === "/sky" ? handleSkyList(env) : handleWall(env);
       }
       return json(404, { error: "not_found" });
     },

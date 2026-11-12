@@ -5,6 +5,7 @@
 import { toPositiveInt } from "./claude.js";
 import { checkToken, deviceKey, json, readJsonBody } from "./http.js";
 import { KEYWORDS } from "./rules.js";
+import { normalizePoints, recordConstellation } from "./sky.js";
 import { validateJpegBase64, validateStory } from "./validate.js";
 
 const DEFAULT_CARD_TTL_DAYS = 30;
@@ -45,7 +46,17 @@ export async function handleCardUpload(request, env, { rateLimiter, now }) {
     return json(429, { error: "rate_limited" });
   }
 
+  // 별자리 모양은 선택 항목이다. 있으면 형식을 확인하고, 틀리면 요청을 돌려보낸다.
+  let points = null;
+  if (input.points !== undefined && input.points !== null) {
+    points = normalizePoints(input.points);
+    if (!points) return json(400, { error: "invalid_points" });
+  }
+
   if (!env.CARDS) return json(503, { error: "card_storage_unavailable" });
+
+  // 모두의 하늘에 더하고 번호를 받는다. 실패해도 카드는 번호 없이 만든다.
+  const number = await recordConstellation(env, { name: story.value.name, keyword: input.keyword, points });
 
   const id = newCardId();
   const record = {
@@ -53,6 +64,7 @@ export async function handleCardUpload(request, env, { rateLimiter, now }) {
     name: story.value.name,
     story: story.value.story,
     image: input.image,
+    number,
     createdAt: new Date(now()).toISOString(),
   };
   const ttlDays = toPositiveInt(env.CARD_TTL_DAYS, DEFAULT_CARD_TTL_DAYS);
@@ -63,7 +75,7 @@ export async function handleCardUpload(request, env, { rateLimiter, now }) {
     return json(503, { error: "card_storage_unavailable" });
   }
 
-  return json(200, { id, url: `${new URL(request.url).origin}/card/${id}` });
+  return json(200, { id, url: `${new URL(request.url).origin}/card/${id}`, number });
 }
 
 /** GET /card/:id — 누구나 열 수 있다(주소를 아는 사람만). */
@@ -90,7 +102,7 @@ export function escapeHtml(text) {
     .replaceAll("'", "&#39;");
 }
 
-function html(status, body) {
+export function html(status, body, cacheControl) {
   return new Response(body, {
     status,
     headers: {
@@ -99,7 +111,7 @@ function html(status, body) {
       "Content-Security-Policy": "default-src 'none'; img-src data:; style-src 'unsafe-inline'",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "no-referrer",
-      "Cache-Control": status === 200 ? "public, max-age=3600" : "no-store",
+      "Cache-Control": cacheControl ?? (status === 200 ? "public, max-age=3600" : "no-store"),
     },
   });
 }
@@ -118,6 +130,7 @@ const PAGE_STYLE = `
     box-shadow: 0 0 60px rgba(120, 110, 255, 0.25);
   }
   .card img { width: 100%; aspect-ratio: 1 / 1; border-radius: 16px; display: block; }
+  .number { margin: 0 0 6px; font-size: 15px; font-weight: 600; letter-spacing: 0.06em; color: #ffe094; }
   .keyword { margin: 0 0 14px; font-size: 14px; letter-spacing: 0.08em; color: #c9c3f0; }
   h1 { margin: 22px 0 12px; font-size: 34px; font-weight: 700; color: #ffe094; word-break: keep-all; }
   .story { margin: 0; font-size: 18px; line-height: 1.75; word-break: keep-all; }
@@ -148,9 +161,11 @@ function cardPage(record) {
   const keyword = KEYWORDS[record.keyword] ?? "";
   // 이미지는 저장할 때 base64 글자만 통과시켰지만, 한 번 더 걸러 속성 밖으로 새지 않게 한다.
   const image = typeof record.image === "string" && /^[A-Za-z0-9+/=]+$/.test(record.image) ? record.image : "";
+  const number = Number.isInteger(record.number) && record.number > 0 ? record.number : 0;
   return page(
     `${record.name} · Constellation`,
-    `${keyword ? `<p class="keyword">${escapeHtml(keyword)}</p>` : ""}
+    `${number ? `<p class="number">${number}번째 별자리</p>` : ""}
+${keyword ? `<p class="keyword">${escapeHtml(keyword)}</p>` : ""}
 ${image ? `<img src="data:image/jpeg;base64,${image}" alt="내가 그린 별자리">` : ""}
 <h1>${escapeHtml(record.name)}</h1>
 <p class="story">${escapeHtml(record.story)}</p>`,
