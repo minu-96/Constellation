@@ -48,6 +48,17 @@ describe("/admin", () => {
     expect((await t.send(form("/admin/clear", { confirm: "전부 삭제" }, { cookie, origin: null }), e)).status).toBe(403);
   });
 
+  it("Origin이 null이어도 Sec-Fetch-Site가 same-origin이면 로그인된다", async () => {
+    const t = setup();
+    const e = env();
+    const req = form("/admin/login", { password: PASSWORD }, { origin: "null" });
+    req.headers.set("Sec-Fetch-Site", "same-origin");
+    expect((await t.send(req, e)).status).toBe(303);
+    const cross = form("/admin/login", { password: PASSWORD }, { origin: "null" });
+    cross.headers.set("Sec-Fetch-Site", "cross-site");
+    expect((await t.send(cross, e)).status).toBe(403);
+  });
+
   it("쿠키 없이 삭제하면 401, 위조 쿠키도 401", async () => {
     const t = setup();
     const e = env();

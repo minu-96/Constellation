@@ -3,13 +3,20 @@
 //  - 로그인하면 12시간짜리 서명 쿠키를 준다(값에 비밀번호는 들어가지 않는다).
 //  - 지우기 요청은 POST만 받고, 같은 사이트에서 온 요청인지(Origin) 확인한다.
 
-import { escapeHtml, html } from "./card.js";
+import { escapeHtml, html as baseHtml } from "./card.js";
 import { timingSafeEqual } from "./http.js";
 import { encodeQr, qrSvg } from "./qr.js";
 import { KEYWORDS } from "./rules.js";
 import { SKY_KEY, readIndex, shapeSvg } from "./sky.js";
 
 const COOKIE = "cadmin";
+
+// 운영자 페이지는 폼을 보낼 때 Origin이 제대로 붙도록 Referrer-Policy를 same-origin으로 둔다.
+function html(status, body, cacheControl) {
+  const response = baseHtml(status, body, cacheControl);
+  response.headers.set("Referrer-Policy", "same-origin");
+  return response;
+}
 const SESSION_SECONDS = 12 * 60 * 60;
 const LOGIN_LIMIT_PER_MINUTE = 5;
 const CARD_ID_RE = /^[a-z0-9]{6,32}$/;
@@ -36,7 +43,10 @@ async function isLoggedIn(request, env, nowMs) {
 }
 
 // 다른 사이트에서 몰래 보낸 POST를 막는다. 브라우저는 POST에 Origin을 붙인다.
+// 페이지에 Referrer-Policy: no-referrer가 붙으면 브라우저가 Origin을 "null"로 보내므로,
+// 브라우저가 붙이는 Sec-Fetch-Site(same-origin)도 같은 사이트의 증거로 받는다.
 function sameOrigin(request) {
+  if (request.headers.get("Sec-Fetch-Site") === "same-origin") return true;
   const origin = request.headers.get("Origin");
   return origin !== null && origin === new URL(request.url).origin;
 }
