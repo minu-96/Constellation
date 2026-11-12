@@ -102,13 +102,21 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 별 구역 | `ridgeMaxElevation`, `starRidgeMargin` | 8°, 2° |
 | 별 구역 | `starRows`, `starJitter` | 3줄, 0.35 |
 | 배치 | `guideElevation`, `guideTextSize`, `resultStorySize` | -27°, 0.075 m, 0.095 m |
+| 하늘 | `enableStarDome`, `backgroundStarCount`, `backgroundStarBrightness` | 켬, 3200, 1.0 |
+| 하늘 | `enableMilkyWay`, `milkyWayStrength` | 켬, 1.0 |
+| 하늘 | `enableRidgeLayers`, `ridgeMaxElevation` | 켬, 8° |
+| 하늘 | `enableLake`, `lakeShoreElevation` | 켬, -25° |
+| 하늘 | `skyVignette`, `skyExposure` | 0.35, 1.0 |
+| 하늘 | `enableShootingStars`, `shootingStarInterval` | 켬, 20~45초 |
 | 성능 | `qualityTier` | Medium (Low / Medium / High) |
 | 성능 | `usePostProcessing`, `ambientParticleCount` | 끔(High에서만 적용), 120 |
 | 캡처 | `captureJpegQuality` | 80 |
 
 중계 서버 쪽 값은 `worker/wrangler.toml`의 `[vars]`에 있다: `RATE_LIMIT_PER_MINUTE`(6), `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CARD_TTL_DAYS`.
 
-프레임이 떨어지면 `qualityTier`를 Low로 낮춘다.
+프레임이 떨어지면 `qualityTier`를 Low로 낮춘다. Low에서는 배경 별이 절반으로 줄고, 호수에 비친 별·별똥별·먼지 입자가 꺼진다. 그래도 모자라면 `enableLake`, `enableRidgeLayers`, `enableMilkyWay` 순서로 끈다.
+
+헤드셋 안에서 하늘이 너무 어둡거나 밝으면 `skyExposure`를, 별이 약하면 `backgroundStarBrightness`를 조정한다.
 
 ### 별 구역
 
