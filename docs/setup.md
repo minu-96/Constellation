@@ -92,6 +92,9 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 소리 | `cricketsVolume`, `windVolume`, `waterVolume` | 0.8, 0.55, 0.35 |
 | 소리 | `ambientVolume`, `ambientDuckedVolume`, `effectVolume` | 0.35, 0.12, 0.7 |
 | 소리 | `cricketsClip`, `windClip`, `waterClip` | 비어 있음(코드로 만든 소리 사용) |
+| 초보 안내 | `enableGestureGuide`, `pinchGuideDelaySeconds`, `finishGuideDelaySeconds` | 켬, 5초, 8초 |
+| 초보 안내 | `missHintCount`, `grabAssistPerMiss` | 2번, 0.2 |
+| 초보 안내 | `enableFinishButton`, `finishButtonDrop`, `finishButtonRadius` | 켬, 9°, 0.06 m |
 | 양손 모으기 | `handsTogetherDistance` / `handsTogetherReleaseDistance` | 0.11 / 0.2 m |
 | 양손 모으기 | `handsTogetherHoldSeconds` | 0.7초 |
 | 되돌리기 | `undoGesture` | PalmSwipe (다른 선택지: MiddlePinch) |
@@ -162,6 +165,9 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | --- | --- | --- |
 | F-12 저장 방식 | Worker의 `/card`가 Cloudflare KV에 30일 보관. 카드는 휴대폰에서 열리는 웹 페이지 | `worker/src/card.js` |
 | 캡처 방식 | 카메라 촬영 대신 별 좌표로 512px 그림을 직접 그림 | `CaptureService.cs` |
+| 완성 방법 | 양손 모으기(F-07)에 더해, 별을 3개 이상 이으면 별 구역 아래에 뜨는 '완성' 별을 집어도 완성된다. 한 손만 쓰는 사람과 양손 인식 실패에 대비한 것 | `FinishButton.cs` |
+| 시범 손 | 한동안 입력이 없으면 반투명한 시범 손이 핀치와 양손 모으기를 보여 준다 | `GestureGuide.cs` |
+| 잡기 보조 | 연달아 빗나가면 잡기 반경을 한 번에 20%씩(최대 60%) 넓히고, 별을 잡으면 원래대로 돌린다 | `ConstellationDrawer.cs` |
 | 되돌리기 | 명세대로 선이 없으면(별 1개) 아무 일도 없음. 첫 별은 바꿀 수 없다 | `ConstellationDrawer.cs` |
 | 무입력 복귀 | KeywordSelect뿐 아니라 Drawing에도 적용 | `SessionController.cs` |
 | 다음 체험 시작 | 끝난 뒤 5초 쉬고, 손을 한 번 내렸다가 들어야 시작 | `SessionController.cs` |
@@ -203,6 +209,12 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 - [ ] 흐르는 선의 빛과 완성 순간의 번쩍임이 눈부시지 않다(`lineFlowStrength`).
 
 ### 손과 별 잡기
+
+- [ ] 5초쯤 가만히 있으면 시범 손이 나타나 핀치를 보여 주고, 직접 집으면 사라진다.
+- [ ] 시범 손이 실제 손이나 별을 가려 방해되지 않는다.
+- [ ] 별을 3개 이상 이으면 아래에 '완성' 별이 뜨고, 집으면 완성된다.
+- [ ] 아래쪽 별을 잡다가 '완성' 별이 실수로 눌리지 않는다(`finishButtonDrop`).
+- [ ] 일부러 두 번 빗나가면 힌트 문구가 뜨고, 그다음에는 조금 더 쉽게 잡힌다.
 
 - [ ] 손가락과 손바닥이 손처럼 읽히고, 엄지와 검지가 구분된다.
 - [ ] 실제 손 추적에서 손가락 선이 심하게 떨리지 않는다.
