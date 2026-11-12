@@ -20,6 +20,8 @@ Unity 패키지(XR Hands, XR Interaction Toolkit, OpenXR, TextMesh Pro, URP)와 
 | 은하수 그림, 능선 높이 | `Assets/Scripts/Sky/SkyData.cs` |
 | 배경 별 | `Assets/Scripts/Sky/StarDome.cs`, `ConstellationStarDome.shader` |
 | 잡는 별, 손, 선, 별가루 | `ConstellationGlow.shader`, `ConstellationLine.shader`, `StarField.cs`, `HandVisual.cs`, `CompletionEffect.cs` |
+| 유성우, 오로라, 반딧불 | `Assets/Scripts/Sky/KeywordSky.cs`, `ConstellationAurora.shader` |
+| 모두의 하늘, 모니터 페이지의 QR | `Assets/Scripts/Sky/SharedSky.cs`, `worker/src/sky.js`, `worker/src/qr.js` |
 | 키워드 아이콘 | `Assets/Scripts/UI/IconPainter.cs` |
 | QR 코드 | `Assets/Scripts/UI/QrEncoder.cs` |
 | 효과음, 화음 배경 | `Assets/Scripts/Audio/ToneSynth.cs` |

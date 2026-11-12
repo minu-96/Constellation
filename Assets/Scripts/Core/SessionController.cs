@@ -29,6 +29,7 @@ namespace Constellation
         [NonSerialized] public ResultView resultView;
         [NonSerialized] public CardService cardService;
         [NonSerialized] public SharedSky sharedSky;
+        [NonSerialized] public KeywordSky keywordSky;
         [NonSerialized] public AudioManager audioManager;
 
         /// <summary>상태가 바뀐 뒤에 알린다(이전 상태, 새 상태).</summary>
@@ -485,6 +486,8 @@ namespace Constellation
             guide.ClearAlert();
             // 선택 직후 후보 별을 뿌린다(F-04).
             starField.Spawn(m_AnchorPosition, m_AnchorRotation);
+            // 키워드에 맞는 하늘(유성우, 오로라, 반딧불)이 서서히 나타난다.
+            keywordSky.Show(keyword.id, m_AnchorPosition, m_AnchorRotation);
             audioManager.PlayKeywordSelect();
         }
 
@@ -643,6 +646,7 @@ namespace Constellation
             m_StarCount = 0;
             gestures.Detecting = false;
             keywordSelector.Hide();
+            keywordSky.Hide();
             gestureGuide.Hide();
             finishButton.Hide();
             completionEffect.Stop();

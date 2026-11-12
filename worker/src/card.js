@@ -55,10 +55,11 @@ export async function handleCardUpload(request, env, { rateLimiter, now }) {
 
   if (!env.CARDS) return json(503, { error: "card_storage_unavailable" });
 
-  // 모두의 하늘에 더하고 번호를 받는다. 실패해도 카드는 번호 없이 만든다.
-  const number = await recordConstellation(env, { name: story.value.name, keyword: input.keyword, points });
-
   const id = newCardId();
+  // 모두의 하늘에 더하고 번호를 받는다. 실패해도 카드는 번호 없이 만든다.
+  // 카드 id도 함께 남겨 모니터 페이지가 QR을 그릴 수 있게 한다.
+  const number = await recordConstellation(env, { name: story.value.name, keyword: input.keyword, points, id });
+
   const record = {
     keyword: input.keyword,
     name: story.value.name,

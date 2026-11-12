@@ -115,10 +115,13 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 하늘 | `enableLake`, `lakeShoreElevation` | 켬, -25° |
 | 하늘 | `skyVignette`, `skyExposure` | 0.35, 1.0 |
 | 하늘 | `enableShootingStars`, `shootingStarInterval` | 켬, 20~45초 |
+| 카드 | `showQrInHeadset`, `cardSeconds` | 끔, 12초 |
 | 모두의 하늘 | `enableSharedSky`, `sharedSkyMaxCount`, `sharedSkyLabelCount` | 켬, 40, 12 |
 | 모두의 하늘 | `sharedSkySize`, `sharedSkyBrightness` | 9°, 0.55 |
+| 키워드별 하늘 | `enableKeywordSky`, `keywordSkyIntensity` | 켬, 1.0 |
 | 연출 | `enableLineFlow`, `lineFlowStrength` | 켬, 0.6 |
 | 연출 | `enableCompletionEffect`, `completionStepSeconds` | 켬, 0.18초 |
+| 연출 | `enableCompletionRipple`, `enableWaterRipples` | 켬, 켬 |
 | 성능 | `qualityTier` | Medium (Low / Medium / High) |
 | 성능 | `usePostProcessing`, `ambientParticleCount` | 끔(High에서만 적용), 120 |
 | 후처리 | `bloomIntensity`, `bloomThreshold`, `bloomScatter` | 0.9, 0.8, 0.65 |
@@ -165,6 +168,7 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 
 | 항목 | 정한 내용 | 위치 |
 | --- | --- | --- |
+| 키워드별 하늘 | 키워드를 고르면 하늘이 달라진다. 소원은 유성우, 모험은 오로라, 소중한 사람은 반딧불. 명세에 없던 기능 | `KeywordSky.cs`, `ConstellationAurora.shader` |
 | 모두의 하늘 | 카드를 올릴 때 별자리 모양을 함께 보내 서버 목록에 쌓고 번호를 매긴다. 앱은 `/sky`로 받아 먼 하늘에 그리고, 모니터는 `/wall` 페이지를 띄운다. 명세에 없던 기능 | `worker/src/sky.js`, `SharedSky.cs` |
 | F-12 저장 방식 | Worker의 `/card`가 Cloudflare KV에 30일 보관. 카드는 휴대폰에서 열리는 웹 페이지 | `worker/src/card.js` |
 | 캡처 방식 | 카메라 촬영 대신 별 좌표로 512px 그림을 직접 그림 | `CaptureService.cs` |
@@ -202,6 +206,12 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 - [ ] (선택) High + `usePostProcessing`을 켰을 때도 72fps가 나오는지 본다.
 
 ### 밝기와 화면
+
+- [ ] 별자리가 새겨지는 순간 주변 별들이 바깥으로 차례로 반짝이며 사라지고, 배경 별이 잠깐 밝아진다.
+- [ ] 손을 지평선 아래(호수 쪽)로 내려 움직이면 그 자리에서 물결이 퍼진다. 어지럽지 않다.
+
+- [ ] 키워드 세 개를 각각 골랐을 때 유성우, 오로라, 반딧불이 보이고 별 잇기를 방해하지 않는다(`keywordSkyIntensity`).
+- [ ] 오로라가 잡는 별 뒤에서 너무 밝아 별이 묻히지 않는다.
 
 - [ ] 위쪽과 뒤쪽 하늘에 다른 사람들의 별자리가 작게 보이고, 잡는 별과 헷갈리지 않는다(`sharedSkyBrightness`).
 - [ ] 이름표가 읽히되 눈에 거슬리지 않는다(`sharedSkyLabelCount`).
@@ -247,7 +257,8 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 방문자들이 만든 별자리가 서버에 쌓이고, 앱은 대기 화면으로 돌아올 때마다 목록을 받아 먼 하늘(잡는 별보다 높은 곳과 뒤쪽)에 작게 그린다. 카드에는 "몇 번째 별자리" 번호가 붙는다.
 
 - 중계 서버에 KV가 연결되어 있어야 한다([worker/README.md](../worker/README.md)). 서버가 없으면 이번 실행에서 만든 별자리만 하늘에 남는다.
-- **모니터**: 전시장 모니터의 브라우저에서 `https://<Worker 주소>/wall`을 전체 화면으로 띄운다. 최근 24개가 보이고 15초마다 새로 고친다. Quest 캐스트 화면과 나란히 두거나 번갈아 띄운다.
+- **모니터**: 전시장 모니터의 브라우저에서 `https://<Worker 주소>/wall`을 전체 화면으로 띄운다. 최근 24개가 보이고 15초마다 새로 고친다.
+- **QR은 모니터에 뜬다**: 가장 최근 3개의 별자리 옆에 카드로 가는 QR이 붙는다. 체험을 마친 사람이 헤드셋을 벗고 모니터에서 자기 별자리(번호로 찾는다)의 QR을 찍는다. 헤드셋 안에는 QR을 띄우지 않는다(`showQrInHeadset`으로 켤 수 있다). Quest 캐스트 화면과 나란히 두거나 번갈아 띄운다.
 - 전시 전에 시험으로 만든 별자리를 지우려면 KV에서 `sky:index` 키를 지운다(명령은 worker/README.md).
 
 ## 전시 당일 확인

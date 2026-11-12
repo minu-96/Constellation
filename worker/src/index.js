@@ -72,7 +72,7 @@ export function createHandler(deps = {}) {
       }
       if (pathname === "/sky" || pathname === "/wall") {
         if (request.method !== "GET" && request.method !== "HEAD") return json(405, { error: "method_not_allowed" });
-        return pathname === "/sky" ? handleSkyList(env) : handleWall(env);
+        return pathname === "/sky" ? handleSkyList(env) : handleWall(env, new URL(request.url).origin);
       }
       return json(404, { error: "not_found" });
     },

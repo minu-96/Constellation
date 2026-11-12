@@ -28,6 +28,7 @@ namespace Constellation
 
             HandInput hands = Create<HandInput>("Hand Input");
             hands.Init(config, origin, headCamera);
+            sky.SetHands(hands);
 
             HandVisual handVisual = Create<HandVisual>("Hand Visual");
             handVisual.Init(config, hands);
@@ -55,6 +56,8 @@ namespace Constellation
 
             CompletionEffect completionEffect = Create<CompletionEffect>("Completion Effect");
             completionEffect.Init(config, starField, drawer);
+            // 별자리가 새겨지는 순간 배경 별도 함께 밝아진다.
+            completionEffect.Engraved += center => sky.PulseStars();
 
             CaptureService capture = Create<CaptureService>("Capture Service");
             capture.Init(config);
@@ -76,6 +79,9 @@ namespace Constellation
 
             AudioManager audioManager = Create<AudioManager>("Audio Manager");
             audioManager.Init(config, headCamera.transform);
+
+            KeywordSky keywordSky = Create<KeywordSky>("Keyword Sky");
+            keywordSky.Init(config, headCamera.transform);
 
             SharedSky sharedSky = Create<SharedSky>("Shared Sky");
             sharedSky.Init(config, headCamera.transform);
@@ -99,6 +105,7 @@ namespace Constellation
             session.resultView = resultView;
             session.cardService = cardService;
             session.sharedSky = sharedSky;
+            session.keywordSky = keywordSky;
             session.audioManager = audioManager;
             session.Begin();
 

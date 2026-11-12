@@ -21,6 +21,16 @@ namespace Constellation
         Material m_SkyMaterial;
         ParticleSystem m_Dust;
         StarDome m_StarDome;
+        // 호수 물결: 손이 지평선 아래를 가리키면 그 방향에서 물결이 퍼진다(두 개까지 동시에).
+        HandInput m_Hands;
+        readonly Vector4[] m_Ripples = { new Vector4(0f, -1f, 0f, -1f), new Vector4(0f, -1f, 0f, -1f) };
+        readonly float[] m_NextRippleTime = new float[2];
+        readonly Vector3[] m_LastRippleDirection = new Vector3[2];
+        int m_NextRippleSlot;
+        float m_ShoreY = 0.42f;
+        static readonly int k_Ripple0Id = Shader.PropertyToID("_Ripple0");
+        static readonly int k_Ripple1Id = Shader.PropertyToID("_Ripple1");
+        const float k_RippleSeconds = 3f;
         Texture2D m_RidgeTexture;
         Texture2D m_MilkyWayTexture;
         System.Threading.Tasks.Task<Color32[]> m_MilkyWayTask;
@@ -47,6 +57,7 @@ namespace Constellation
             float ridgeMaxY = Mathf.Sin(Mathf.Clamp(m_Config.ridgeMaxElevation, 0f, 30f) * Mathf.Deg2Rad);
             float shoreY = Mathf.Sin(Mathf.Clamp(-m_Config.lakeShoreElevation, 5f, 80f) * Mathf.Deg2Rad);
 
+            m_ShoreY = shoreY;
             BuildDome(ridges, ridgeMaxY, shoreY);
             BuildStarDome(ridges, ridgeMaxY, shoreY);
             BuildShootingStars();
@@ -91,6 +102,66 @@ namespace Constellation
             // 은하수 그림은 계산이 무거워 백그라운드에서 만들고, 다 되면 서서히 나타나게 한다.
             if (m_Config.enableMilkyWay)
                 m_MilkyWayTask = System.Threading.Tasks.Task.Run(() => SkyData.BuildMilkyWayPixels());
+        }
+
+        /// <summary>손 입력을 알려 주면 호수 물결이 손에 반응한다.</summary>
+        public void SetHands(HandInput hands)
+        {
+            m_Hands = hands;
+        }
+
+        /// <summary>배경 별 전체가 잠깐 밝아진다(별자리가 완성될 때).</summary>
+        public void PulseStars()
+        {
+            if (m_StarDome != null && m_Config.enableCompletionRipple)
+                m_StarDome.Pulse(0.9f);
+        }
+
+        // 손이 호수 쪽을 가리키면 그 방향에 물결을 일으킨다. 같은 자리에서 연달아 일으키지는 않는다.
+        void UpdateWaterRipples()
+        {
+            if (m_SkyMaterial == null || !m_Config.enableLake || !m_Config.enableWaterRipples)
+                return;
+
+            for (int i = 0; i < m_Ripples.Length; i++)
+            {
+                if (m_Ripples[i].w >= 0f)
+                {
+                    m_Ripples[i].w += Time.deltaTime;
+                    if (m_Ripples[i].w > k_RippleSeconds)
+                        m_Ripples[i].w = -1f;
+                }
+            }
+
+            if (m_Hands != null && m_Head != null)
+            {
+                TryRipple(0, m_Hands.Left);
+                TryRipple(1, m_Hands.Right);
+            }
+
+            m_SkyMaterial.SetVector(k_Ripple0Id, m_Ripples[0]);
+            m_SkyMaterial.SetVector(k_Ripple1Id, m_Ripples[1]);
+        }
+
+        void TryRipple(int hand, HandState state)
+        {
+            if (!state.isTracked || Time.time < m_NextRippleTime[hand])
+                return;
+            Vector3 direction = state.pinchPoint - m_Head.position;
+            if (direction.sqrMagnitude < 0.01f)
+                return;
+            direction.Normalize();
+            // 지평선 바로 아래부터 물가까지가 호수다.
+            if (direction.y > -0.08f || direction.y < -m_ShoreY + 0.03f)
+                return;
+            // 손이 거의 움직이지 않았으면 새 물결을 만들지 않는다.
+            if (Vector3.Angle(direction, m_LastRippleDirection[hand]) < 4f)
+                return;
+
+            m_LastRippleDirection[hand] = direction;
+            m_NextRippleTime[hand] = Time.time + 0.7f;
+            m_Ripples[m_NextRippleSlot] = new Vector4(direction.x, direction.y, direction.z, 0f);
+            m_NextRippleSlot = (m_NextRippleSlot + 1) % m_Ripples.Length;
         }
 
         void BuildStarDome(float[][] ridges, float ridgeMaxY, float shoreY)
@@ -261,6 +332,7 @@ namespace Constellation
         {
             // 하늘은 무한히 멀어 보여야 하므로 머리 위치를 따라간다(회전은 따라가지 않는다).
             UpdateMilkyWay();
+            UpdateWaterRipples();
             if (m_Dome != null && m_Head != null)
                 m_Dome.position = m_Head.position;
             if (m_StarDome != null && m_Head != null)

@@ -13,6 +13,8 @@ namespace Constellation
     {
         /// <summary>빛이 n번째 별에 닿았을 때(0부터). 소리를 맞춰 내는 데 쓴다.</summary>
         public event Action<int> StarReached;
+        /// <summary>빛이 선을 다 훑어 별자리가 새겨진 순간. 인자는 별자리의 가운데(월드).</summary>
+        public event Action<Vector3> Engraved;
 
         ConstellationConfig m_Config;
         StarField m_StarField;
@@ -93,6 +95,9 @@ namespace Constellation
                 return;
             }
 
+            // 주변 별은 물결이 닿을 때까지 남겨 둔다.
+            if (m_Config.enableCompletionRipple)
+                m_StarField.ExpectRipple();
             m_Time = 0f;
             m_NextStar = 0;
             m_Playing = true;
@@ -156,6 +161,13 @@ namespace Constellation
             m_Drawer.SetPulse(0f, 0f);
             m_Drawer.SetEngraved(true);
             m_Playing = false;
+
+            // 새겨지는 순간 별자리에서 빛이 퍼져 주변 별들이 반응한다.
+            Vector3 center = m_StarField.GetSelectionCenter(m_Order);
+            if (m_Config.enableCompletionRipple)
+                m_StarField.Ripple(center);
+            if (Engraved != null)
+                Engraved(center);
         }
     }
 }

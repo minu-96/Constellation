@@ -15,6 +15,8 @@ namespace Constellation
         Mesh m_Mesh;
         Material m_Material;
         Material m_ReflectionMaterial;
+        float m_BaseBrightness = 1f;
+        float m_Boost;
 
         // 별 색(온도). 푸른 흰색, 흰색, 노란색, 주황색
         static readonly Color32[] k_Tints =
@@ -30,6 +32,7 @@ namespace Constellation
         /// <param name="reflectionShoreY">호수 반사를 그릴 때 물가의 깊이(y). 0 이하면 반사를 그리지 않는다.</param>
         public void Init(ConstellationConfig config, float[][] ridges, float ridgeMaxY, int count, float reflectionShoreY)
         {
+            m_BaseBrightness = config.backgroundStarBrightness;
             m_Mesh = BuildMesh(ridges, ridgeMaxY, Mathf.Clamp(count, 100, 12000));
 
             m_Material = VisualFactory.CreateMaterial("StarDome");
@@ -129,6 +132,23 @@ namespace Constellation
             mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 2.5f);
             mesh.UploadMeshData(true);
             return mesh;
+        }
+
+        /// <summary>배경 별 전체가 잠깐 밝아졌다가 돌아온다(별자리가 완성될 때 하늘이 반응한다).</summary>
+        public void Pulse(float amount)
+        {
+            m_Boost = Mathf.Max(m_Boost, amount);
+        }
+
+        void Update()
+        {
+            if (m_Boost <= 0f || m_Material == null)
+                return;
+            m_Boost = Mathf.MoveTowards(m_Boost, 0f, Time.deltaTime / 1.8f);
+            float brightness = m_BaseBrightness * (1f + m_Boost);
+            m_Material.SetFloat("_Brightness", brightness);
+            if (m_ReflectionMaterial != null)
+                m_ReflectionMaterial.SetFloat("_Brightness", brightness);
         }
 
         void OnDestroy()

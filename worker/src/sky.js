@@ -6,6 +6,7 @@
 // 여러 기기가 동시에 올리면 번호가 겹칠 수 있지만, 전시는 기기 한 대라 문제가 되지 않는다.
 
 import { escapeHtml, html } from "./card.js";
+import { encodeQr, qrSvg } from "./qr.js";
 import { json } from "./http.js";
 import { KEYWORDS } from "./rules.js";
 
@@ -15,6 +16,9 @@ export const SKY_MAX_ITEMS = 80;
 export const POINTS_MIN = 2;
 export const POINTS_MAX = 16;
 const WALL_ITEMS = 24;
+/** 모니터에서 QR을 붙여 주는 개수(가장 최근 것부터). 방금 체험한 사람이 찍어 간다. */
+const WALL_QR_ITEMS = 3;
+const CARD_ID_RE = /^[a-z0-9]{6,32}$/;
 
 /**
  * 별자리 모양 검증. 0~1 범위의 [x, y] 점 2~16개(이은 순서, 위가 +y).
@@ -46,13 +50,13 @@ async function readIndex(env) {
 /**
  * 별자리 하나를 목록에 더하고 번호를 돌려준다. 저장소가 없거나 실패하면 null(카드는 번호 없이 만든다).
  */
-export async function recordConstellation(env, { name, keyword, points }) {
+export async function recordConstellation(env, { name, keyword, points, id }) {
   if (!env.CARDS || !points) return null;
   try {
     const index = await readIndex(env);
     const number = index.count + 1;
     index.count = number;
-    index.items.push({ n: number, name, keyword, points });
+    index.items.push({ n: number, name, keyword, points, id });
     if (index.items.length > SKY_MAX_ITEMS) index.items = index.items.slice(-SKY_MAX_ITEMS);
     await env.CARDS.put(SKY_KEY, JSON.stringify(index));
     return number;
@@ -67,15 +71,16 @@ export async function handleSkyList(env) {
   if (!env.CARDS) return json(503, { error: "sky_storage_unavailable" });
   const index = await readIndex(env);
   // xy는 점들을 한 줄로 편 것([x0, y0, x1, y1, …])이다. Unity의 JSON 읽기가 겹친 배열을 못 읽어서 함께 준다.
-  const items = index.items.map((item) => ({ ...item, xy: Array.isArray(item.points) ? item.points.flat() : [] }));
+  // 카드 id는 내보내지 않는다(앱이 쓰지 않는다).
+  const items = index.items.map(({ id, ...item }) => ({ ...item, xy: Array.isArray(item.points) ? item.points.flat() : [] }));
   return json(200, { count: index.count, items });
 }
 
 /** GET /wall — 전시장 모니터용 */
-export async function handleWall(env) {
+export async function handleWall(env, origin) {
   const index = env.CARDS ? await readIndex(env) : { count: 0, items: [] };
   const latest = index.items.slice(-WALL_ITEMS).reverse();
-  const cells = latest.map((item, i) => wallCell(item, i === 0)).join("\n");
+  const cells = latest.map((item, i) => wallCell(item, i === 0, i < WALL_QR_ITEMS ? origin : null)).join("\n");
   const body = `<!doctype html>
 <html lang="ko">
 <head>
@@ -100,7 +105,7 @@ ${cells}
   return html(200, body, "no-store");
 }
 
-function wallCell(item, newest) {
+function wallCell(item, newest, origin) {
   const points = normalizePoints(item.points) ?? [];
   // 화면은 아래가 +y라 세로를 뒤집고, 가장자리에 여백을 둔다.
   const at = ([x, y]) => `${(8 + x * 84).toFixed(1)},${(8 + (1 - y) * 84).toFixed(1)}`;
@@ -108,10 +113,17 @@ function wallCell(item, newest) {
   const stars = points.map((p) => { const [cx, cy] = at(p).split(","); return `<circle cx="${cx}" cy="${cy}" r="2.2"/>`; }).join("");
   const keyword = KEYWORDS[item.keyword] ?? "";
   const number = Number.isInteger(item.n) ? item.n : 0;
-  return `<article class="cell${newest ? " newest" : ""}">
+  // 최근 것에는 카드로 가는 QR을 붙인다. 휴대폰으로 찍으면 카드 페이지가 열린다.
+  let qr = "";
+  if (origin && typeof item.id === "string" && CARD_ID_RE.test(item.id)) {
+    const svg = qrSvg(encodeQr(`${origin}/card/${item.id}`));
+    if (svg) qr = `<div class="scan">${svg}<span>휴대폰으로 찍어<br>카드를 받아 가세요</span></div>`;
+  }
+  return `<article class="cell${newest ? " newest" : ""}${qr ? " has-qr" : ""}">
 <svg viewBox="0 0 100 100" role="img" aria-label="${escapeHtml(String(item.name ?? ""))}"><polyline points="${line}"/>${stars}</svg>
 <h2>${escapeHtml(String(item.name ?? ""))}</h2>
 <p>${number}번째${keyword ? ` · ${escapeHtml(keyword)}` : ""}</p>
+${qr}
 </article>`;
 }
 
@@ -135,6 +147,11 @@ const WALL_STYLE = `
   .cell p { margin: 0; font-size: 1.5vh; color: #8f89bd; }
   .newest { background: rgba(255, 224, 148, 0.09); box-shadow: 0 0 6vh rgba(255, 224, 148, 0.25); }
   .newest h2 { color: #ffe094; }
+  .scan { display: flex; align-items: center; justify-content: center; gap: 0.6vw; margin-top: 1vh; }
+  .scan .qr { width: 9vh; height: 9vh; border-radius: 0.6vh; flex: none; }
+  .scan span { font-size: 1.3vh; line-height: 1.5; color: #c9c3f0; text-align: left; }
+  .newest .scan .qr { width: 13vh; height: 13vh; }
+  .newest .scan span { font-size: 1.6vh; color: #ffe094; }
   footer { margin-top: 3vh; font-size: 1.4vh; letter-spacing: 0.2em; color: #6e689c; }
   @media (max-width: 900px) { .grid { grid-template-columns: repeat(3, 1fr); } }
 `;
