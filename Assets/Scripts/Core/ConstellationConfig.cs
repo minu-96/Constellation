@@ -111,6 +111,14 @@ namespace Constellation
         [Range(0f, 1f)] public float skyVignette = 0.35f;
         [Tooltip("하늘 전체 밝기. 헤드셋에서 어둡거나 밝으면 조정한다")]
         [Range(0.3f, 3f)] public float skyExposure = 1f;
+        [Tooltip("이은 선을 따라 빛이 흐르고, 새 선이 이어질 때 빛이 지나간다")]
+        public bool enableLineFlow = true;
+        [Tooltip("선을 따라 흐르는 빛의 세기")]
+        [Range(0f, 2f)] public float lineFlowStrength = 0.6f;
+        [Tooltip("완성 순간 별이 차례로 번쩍이고 빛이 선을 훑은 뒤 별자리가 새겨지는 연출")]
+        public bool enableCompletionEffect = true;
+        [Tooltip("완성 연출에서 별 하나에서 다음 별로 넘어가는 시간(초)")]
+        public float completionStepSeconds = 0.18f;
         [Tooltip("가끔 별똥별이 지나간다")]
         public bool enableShootingStars = true;
         [Tooltip("별똥별 사이의 간격(초, 최소~최대)")]

@@ -22,6 +22,8 @@ namespace Constellation
             public bool hovered;
             /// <summary>손이 얼마나 가까운지(0~1). 가까울수록 별이 커진다.</summary>
             public float proximity;
+            /// <summary>완성 연출에서 번쩍이는 정도(1에서 0으로 줄어든다)</summary>
+            public float flash;
             public float size;
             public float intensity;
         }
@@ -188,6 +190,13 @@ namespace Constellation
             }
         }
 
+        /// <summary>별 하나를 잠깐 크게 번쩍이게 한다(완성 연출).</summary>
+        public void Flash(int index)
+        {
+            if (index >= 0 && index < m_Stars.Count)
+                m_Stars[index].flash = 1f;
+        }
+
         /// <summary>주어진 위치에서 반경 안에 있는 가장 가까운 별. 없으면 -1.</summary>
         public int FindNearest(Vector3 worldPosition, float radius)
         {
@@ -294,6 +303,13 @@ namespace Constellation
                     targetSize = star.baseSize * 1.6f;
                     targetIntensity = 2.1f;
                     color = m_Config.starHoverColor;
+                }
+
+                if (star.flash > 0f)
+                {
+                    targetSize *= 1f + 0.7f * star.flash;
+                    targetIntensity += 4f * star.flash;
+                    star.flash = Mathf.MoveTowards(star.flash, 0f, dt / 0.6f);
                 }
 
                 float k = 1f - Mathf.Exp(-12f * dt);
