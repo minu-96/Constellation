@@ -77,6 +77,8 @@ namespace Constellation
             CardService cardService = Create<CardService>("Card Service");
             cardService.Init(config);
 
+            NarrationClient narration = Create<NarrationClient>("Narration");
+            narration.Init(config);
             AudioManager audioManager = Create<AudioManager>("Audio Manager");
             audioManager.Init(config, headCamera.transform);
 
@@ -100,6 +102,7 @@ namespace Constellation
             session.finishButton = finishButton;
             session.capture = capture;
             session.aiClient = aiClient;
+            session.narration = narration;
             session.fallback = fallback;
             session.gatherEffect = gatherEffect;
             session.resultView = resultView;

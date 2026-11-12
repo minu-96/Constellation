@@ -156,6 +156,12 @@ npx wrangler secret put ANTHROPIC_API_KEY
 npx wrangler secret put APP_SHARED_TOKEN
 ```
 
+이야기 낭독(TTS)을 쓰려면 Google Cloud의 Text-to-Speech API 키도 등록합니다(`POST /tts`, 음성은 저장하지 않고 WAV로 바로 돌려줍니다). 음성과 속도는 `wrangler.toml`의 `TTS_VOICE`, `TTS_SPEAKING_RATE`로 바꿉니다. 키를 등록하지 않으면 앱은 글자만 보여 줍니다.
+
+```bash
+npx wrangler secret put GOOGLE_TTS_API_KEY
+```
+
 결과 카드(QR)를 쓰려면 KV 네임스페이스를 만듭니다. 출력된 `id`를 `wrangler.toml`의 `[[kv_namespaces]]` 주석 블록에 넣고 주석을 풉니다. 카드가 필요 없으면 건너뜁니다.
 
 ```bash

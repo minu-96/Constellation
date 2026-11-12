@@ -12,6 +12,9 @@ CLAUDE_EFFORT = "low"
 CLAUDE_TIMEOUT_MS = "9000"
 # 기기당 분당 호출 횟수. 기기 테스트 후 조정.
 RATE_LIMIT_PER_MINUTE = "6"
+# 낭독(Google Cloud TTS) 음성과 속도. 음성 이름은 Google 음성 목록에서 확인한다.
+TTS_VOICE = "ko-KR-Neural2-A"
+TTS_SPEAKING_RATE = "0.92"
 # 결과 카드 보관 기간(일)
 CARD_TTL_DAYS = "30"
 
@@ -24,4 +27,5 @@ id = "51f95c7e31af484c8878b19a7956e844"
 # 시크릿은 이 파일에 적지 않는다. 아래 명령으로 등록한다.
 #   npx wrangler secret put ANTHROPIC_API_KEY   <- Anthropic 콘솔에서 발급한 API 키
 #   npx wrangler secret put APP_SHARED_TOKEN    <- 앱과 공유하는 임의의 긴 문자열
+#   npx wrangler secret put GOOGLE_TTS_API_KEY <- Google Cloud 콘솔에서 발급한 API 키(낭독용)
 # 로컬 실행용 값은 .dev.vars에 둔다(.dev.vars.example 참고, 커밋 금지).

@@ -24,6 +24,7 @@ namespace Constellation
         [NonSerialized] public FinishButton finishButton;
         [NonSerialized] public CaptureService capture;
         [NonSerialized] public AiClient aiClient;
+        [NonSerialized] public NarrationClient narration;
         [NonSerialized] public FallbackStore fallback;
         [NonSerialized] public GatherEffect gatherEffect;
         [NonSerialized] public ResultView resultView;
@@ -207,6 +208,8 @@ namespace Constellation
                     // 카드 화면에서 QR이 바로 보이도록 업로드를 미리 시작한다.
                     cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg, m_Shape);
                     audioManager.PlayResult();
+                    // 이야기 글자가 나타나기 시작할 때쯤부터 읽는다(ResultView의 이야기 지연과 같은 값).
+                    narration.Play(m_ResultStory, ResultView.StoryDelaySeconds);
                     break;
 
                 case SessionState.Card:
@@ -596,6 +599,7 @@ namespace Constellation
                     Debug.Log("[Constellation] AI 실패, 폴백 사용: " + (result != null ? result.error : "null"));
                 UseFallback();
             }
+            narration.Prefetch(m_ResultStory);
             m_AiDone = true;
         }
 
@@ -654,6 +658,7 @@ namespace Constellation
             starField.Clear();
             m_AiDone = false;
             aiClient.Cancel();
+            narration.Stop();
             gatherEffect.Stop();
             ReleaseCapture();
             m_CardQrShown = false;

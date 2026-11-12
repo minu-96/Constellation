@@ -19,6 +19,8 @@ namespace Constellation
 
         const float k_NameFadeSeconds = 1.2f;
         const float k_StoryDelay = 1.4f;
+        /// <summary>이름이 나온 뒤 이야기 글자가 나타나기 시작하기까지의 시간(초)</summary>
+        public const float StoryDelaySeconds = k_StoryDelay;
         const float k_CharsPerSecond = 28f;
 
         public void Init(ConstellationConfig config)

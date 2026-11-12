@@ -138,6 +138,12 @@ namespace Constellation
         public float completionStepSeconds = 0.18f;
         [Tooltip("헤드셋 안의 카드 화면에도 QR을 띄운다. 기본은 끔: QR은 모니터 페이지(/wall)에서 찍는다")]
         public bool showQrInHeadset = false;
+        [Tooltip("결과 이야기를 목소리로 읽어 준다(중계 서버의 /tts 사용). 실패하면 글자만 보인다")]
+        public bool enableNarration = true;
+        [Range(0f, 1f)]
+        public float narrationVolume = 0.9f;
+        [Tooltip("낭독 음성을 기다리는 최대 시간(초). 넘으면 이번에는 읽지 않는다")]
+        public float narrationTimeoutSeconds = 8f;
         [Tooltip("모두의 하늘: 앞선 방문자들의 별자리를 먼 하늘에 그린다(중계 서버의 /sky 에서 받아 온다)")]
         public bool enableSharedSky = true;
         [Tooltip("하늘에 그리는 별자리의 최대 개수(최근 것부터)")]

@@ -6,6 +6,7 @@ import { handleCardUpload, handleCardView } from "./card.js";
 import { createAnthropicClient, requestStoryText, parseModelJson, toPositiveInt } from "./claude.js";
 import { checkToken, deviceKey, json, readJsonBody } from "./http.js";
 import { handleSkyList, handleWall } from "./sky.js";
+import { handleTts } from "./tts.js";
 import { createRateLimiter } from "./rateLimit.js";
 import { validateStory, validateStoryRequest } from "./validate.js";
 
@@ -19,6 +20,7 @@ export function createHandler(deps = {}) {
   const createClient = deps.createClient ?? createAnthropicClient;
   const rateLimiter = deps.rateLimiter ?? createRateLimiter();
   const now = deps.now ?? (() => Date.now());
+  const fetchImpl = deps.fetchImpl;
 
   async function handleStory(request, env) {
     const denied = checkToken(request, env);
@@ -61,6 +63,10 @@ export function createHandler(deps = {}) {
       if (pathname === "/" || pathname === "/story") {
         if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
         return handleStory(request, env);
+      }
+      if (pathname === "/tts") {
+        if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
+        return handleTts(request, env, { rateLimiter, now, fetchImpl });
       }
       if (pathname === "/card") {
         if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
