@@ -90,6 +90,40 @@ namespace Constellation
         [Tooltip("Low: 가장 가벼움 / Medium: 기본 / High: URP 후처리 허용")]
         public QualityTier qualityTier = QualityTier.Medium;
 
+        [Header("하늘과 지형 (효과별 켜고 끄기)")]
+        [Tooltip("배경 별을 메시로 그린다. 끄면 배경 별이 없다")]
+        public bool enableStarDome = true;
+        [Tooltip("배경 별 개수. 품질 단계가 Low면 절반만 쓴다")]
+        public int backgroundStarCount = 3200;
+        [Tooltip("배경 별 밝기")]
+        [Range(0f, 3f)] public float backgroundStarBrightness = 1f;
+        [Tooltip("은하수를 그린다")]
+        public bool enableMilkyWay = true;
+        [Tooltip("은하수 밝기")]
+        [Range(0f, 3f)] public float milkyWayStrength = 1f;
+        [Tooltip("능선을 세 겹으로 그린다. 끄면 가까운 언덕 한 겹만 그린다")]
+        public bool enableRidgeLayers = true;
+        [Tooltip("지평선 아래에 호수와 반사를 그린다. 끄면 어두운 땅만 그린다")]
+        public bool enableLake = true;
+        [Tooltip("호수가 끝나고 발밑의 땅이 시작되는 각도(도, 음수). 안내 글자가 물 위에 오게 하려면 더 낮춘다")]
+        public float lakeShoreElevation = -25f;
+        [Tooltip("시선 가장자리를 어둡게 하는 정도(하늘 셰이더 안에서 처리, 추가 비용 없음)")]
+        [Range(0f, 1f)] public float skyVignette = 0.35f;
+        [Tooltip("하늘 전체 밝기. 헤드셋에서 어둡거나 밝으면 조정한다")]
+        [Range(0.3f, 3f)] public float skyExposure = 1f;
+        [Tooltip("이은 선을 따라 빛이 흐르고, 새 선이 이어질 때 빛이 지나간다")]
+        public bool enableLineFlow = true;
+        [Tooltip("선을 따라 흐르는 빛의 세기")]
+        [Range(0f, 2f)] public float lineFlowStrength = 0.6f;
+        [Tooltip("완성 순간 별이 차례로 번쩍이고 빛이 선을 훑은 뒤 별자리가 새겨지는 연출")]
+        public bool enableCompletionEffect = true;
+        [Tooltip("완성 연출에서 별 하나에서 다음 별로 넘어가는 시간(초)")]
+        public float completionStepSeconds = 0.18f;
+        [Tooltip("가끔 별똥별이 지나간다")]
+        public bool enableShootingStars = true;
+        [Tooltip("별똥별 사이의 간격(초, 최소~최대)")]
+        public Vector2 shootingStarInterval = new Vector2(20f, 45f);
+
         // ------------------------------------------------------------------ 확정값
 
         [Header("별 (확정)")]
@@ -283,7 +317,13 @@ namespace Constellation
 
         [Header("색")]
         public Color skyZenithColor = new Color(0.012f, 0.02f, 0.075f);
-        public Color skyHorizonColor = new Color(0.16f, 0.11f, 0.36f);
+        public Color skyHorizonColor = new Color(0.11f, 0.09f, 0.27f);
+        [Tooltip("지평선의 대기광과 먼 능선에 섞이는 안개 색")]
+        public Color skyHazeColor = new Color(0.34f, 0.27f, 0.50f);
+        [Tooltip("호수에 비친 하늘에 곱하는 색")]
+        public Color waterTint = new Color(0.42f, 0.48f, 0.70f);
+        [Tooltip("발밑 땅의 색")]
+        public Color groundColor = new Color(0.004f, 0.005f, 0.014f);
         public Color hillColor = new Color(0.006f, 0.008f, 0.025f);
         public Color starColor = new Color(0.78f, 0.86f, 1.0f);
         public Color starHoverColor = new Color(1.0f, 1.0f, 1.0f);
@@ -309,9 +349,25 @@ namespace Constellation
         [Header("후처리 (기기 성능 테스트 후 조정)")]
         [Tooltip("URP 후처리(블룸·비네트·색 보정)를 켠다. 품질 단계가 High일 때만 적용된다. Quest에서는 화면 전체를 여러 번 다시 그려 비용이 크므로 기본은 끔")]
         public bool usePostProcessing = false;
+        [Tooltip("블룸 세기. 별빛이 번지는 정도")]
         public float bloomIntensity = 0.9f;
+        [Tooltip("이 밝기보다 밝은 곳만 번진다. 낮추면 더 많이 번지지만 화면이 뿌옇게 된다")]
         public float bloomThreshold = 0.8f;
-        public float vignetteIntensity = 0.28f;
+        [Tooltip("번짐이 퍼지는 넓이")]
+        [Range(0f, 1f)] public float bloomScatter = 0.65f;
+        [Tooltip("블룸을 4분의 1 해상도에서 계산한다(가볍다). 끄면 2분의 1 해상도(무겁고 선명하다)")]
+        public bool bloomQuarterResolution = true;
+        [Tooltip("블룸 반복 횟수. 적을수록 가볍다")]
+        [Range(2, 6)] public int bloomIterations = 3;
+        [Tooltip("후처리 비네트 세기. 하늘 셰이더의 비네트(skyVignette)와 겹치므로 작게 둔다. 0이면 끈다")]
+        [Range(0f, 1f)] public float vignetteIntensity = 0.15f;
+        [Tooltip("Neutral 톤매핑을 켠다. URP 에셋에서 HDR을 켰을 때만 의미가 있다(지금 프로젝트는 HDR 꺼짐)")]
+        public bool postTonemapping = false;
+        [Tooltip("후처리 대비와 채도 보정")]
+        public float postContrast = 8f;
+        public float postSaturation = 6f;
+        [Tooltip("필름 그레인 세기. VR에서는 두 눈에 다른 잡음이 보여 거슬릴 수 있으므로 기본은 0(끔)")]
+        [Range(0f, 1f)] public float filmGrainIntensity = 0f;
         [Tooltip("하늘에 떠다니는 먼지 별빛 입자 수. 0이면 끈다. 품질 단계가 Low면 꺼진다")]
         public int ambientParticleCount = 120;
 
@@ -323,10 +379,21 @@ namespace Constellation
         [Tooltip("결과 화면에서 줄어든 배경음 크기")]
         [Range(0f, 1f)] public float ambientDuckedVolume = 0.12f;
         [Range(0f, 1f)] public float effectVolume = 0.7f;
+        [Tooltip("밤의 환경음(풀벌레, 바람, 먼 물소리)을 켠다")]
+        public bool enableNatureAmbience = true;
+        [Tooltip("환경음 전체 크기")]
+        [Range(0f, 1f)] public float natureVolume = 0.6f;
+        [Range(0f, 1f)] public float cricketsVolume = 0.8f;
+        [Range(0f, 1f)] public float windVolume = 0.55f;
+        [Range(0f, 1f)] public float waterVolume = 0.35f;
         [Tooltip("핀치할 때 나는 작은 틱 소리의 크기. 0이면 끈다")]
         [Range(0f, 1f)] public float pinchVolume = 0.3f;
         [Tooltip("비워 두면 코드로 만든 소리를 쓴다. 파일로 바꾸려면 여기에 넣는다")]
         public AudioClip ambientClip;
+        [Tooltip("환경음을 녹음 파일로 바꾸려면 여기에 넣는다(이음매 없이 반복되는 파일)")]
+        public AudioClip cricketsClip;
+        public AudioClip windClip;
+        public AudioClip waterClip;
         public AudioClip starGrabClip;
         public AudioClip lineConnectClip;
         public AudioClip undoClip;
@@ -340,6 +407,8 @@ namespace Constellation
         [Header("개발용")]
         [Tooltip("에디터에서 헤드셋 없이 마우스·키보드로 손을 흉내 낸다")]
         public bool editorSimulation = true;
+        [Tooltip("프레임 수와 프레임 시간을 화면 아래에 띄운다(에디터와 개발 빌드에서만). 전시 빌드에서는 끈다")]
+        public bool showFpsOverlay = false;
         [Tooltip("상태 전환을 콘솔에 남긴다")]
         public bool logStateChanges = true;
 

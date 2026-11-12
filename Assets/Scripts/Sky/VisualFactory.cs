@@ -15,6 +15,11 @@ namespace Constellation
         public static readonly int UseTextureId = Shader.PropertyToID("_UseTexture");
         public static readonly int BillboardId = Shader.PropertyToID("_Billboard");
         public static readonly int RingId = Shader.PropertyToID("_Ring");
+        public static readonly int FlowStrengthId = Shader.PropertyToID("_FlowStrength");
+        public static readonly int FlowDensityId = Shader.PropertyToID("_FlowDensity");
+        public static readonly int PulsePositionId = Shader.PropertyToID("_PulsePosition");
+        public static readonly int PulseStrengthId = Shader.PropertyToID("_PulseStrength");
+        public static readonly int PulseWidthId = Shader.PropertyToID("_PulseWidth");
 
         static Mesh s_Quad;
 

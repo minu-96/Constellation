@@ -9,6 +9,12 @@ namespace Constellation
     {
         const float k_Tau = Mathf.PI * 2f;
 
+        /// <summary>샘플 배열을 오디오 클립으로 만든다. 메인 스레드에서만 부른다.</summary>
+        public static AudioClip CreateClip(string name, float[] samples, int sampleRate)
+        {
+            return Build(name, samples, sampleRate);
+        }
+
         static AudioClip Build(string name, float[] samples, int sampleRate)
         {
             AudioClip clip = AudioClip.Create(name, samples.Length, 1, sampleRate, false);
@@ -99,6 +105,12 @@ namespace Constellation
         /// </summary>
         public static AudioClip Ambient(int sampleRate)
         {
+            return Build("Ambient", AmbientSamples(sampleRate), sampleRate);
+        }
+
+        /// <summary>배경음의 샘플만 계산한다. Unity 오브젝트를 만들지 않아 백그라운드 스레드에서 불러도 된다.</summary>
+        public static float[] AmbientSamples(int sampleRate)
+        {
             const float seconds = 16f;
             int count = Mathf.CeilToInt(sampleRate * seconds);
             float[] samples = new float[count];
@@ -125,7 +137,7 @@ namespace Constellation
 
             for (int i = 0; i < count; i++)
                 samples[i] = Mathf.Clamp(samples[i], -1f, 1f);
-            return Build("Ambient", samples, sampleRate);
+            return samples;
         }
 
         // 끝에서 갑자기 끊겨 '틱' 소리가 나지 않게 마지막 20ms를 줄인다.

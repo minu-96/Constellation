@@ -120,6 +120,14 @@ namespace Constellation
                 Selected(m_Orbs[best].keyword);
         }
 
+        public int OrbCount { get { return m_Orbs != null ? m_Orbs.Length : 0; } }
+
+        /// <summary>n번째 아이콘의 위치(월드).</summary>
+        public Vector3 GetOrbPosition(int index)
+        {
+            return m_Orbs[Mathf.Clamp(index, 0, m_Orbs.Length - 1)].transform.position;
+        }
+
         int FindNearest(Vector3 position, float radius)
         {
             int best = -1;

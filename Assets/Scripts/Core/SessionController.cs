@@ -19,6 +19,7 @@ namespace Constellation
         [NonSerialized] public KeywordSelector keywordSelector;
         [NonSerialized] public StarField starField;
         [NonSerialized] public ConstellationDrawer drawer;
+        [NonSerialized] public CompletionEffect completionEffect;
         [NonSerialized] public CaptureService capture;
         [NonSerialized] public AiClient aiClient;
         [NonSerialized] public FallbackStore fallback;
@@ -68,6 +69,7 @@ namespace Constellation
             drawer.Undone += OnUndone;
             gestures.HandsTogether += OnHandsTogether;
             gestures.UndoRequested += OnUndoRequested;
+            completionEffect.StarReached += OnCompletionStarReached;
 
             m_Started = true;
             State = SessionState.Idle;
@@ -87,6 +89,8 @@ namespace Constellation
                 drawer.MaxReached -= OnMaxStarsReached;
                 drawer.Undone -= OnUndone;
             }
+            if (completionEffect != null)
+                completionEffect.StarReached -= OnCompletionStarReached;
             if (gestures != null)
             {
                 gestures.HandsTogether -= OnHandsTogether;
@@ -107,8 +111,28 @@ namespace Constellation
             if (config.logStateChanges)
                 Debug.Log("[Constellation] " + previous + " → " + next);
             Enter(next);
+            audioManager.SetScene(SceneFor(next));
             if (StateChanged != null)
                 StateChanged(previous, next);
+        }
+
+        // 단계마다 배경음과 환경음의 균형이 달라진다.
+        static AudioScene SceneFor(SessionState state)
+        {
+            switch (state)
+            {
+                case SessionState.KeywordSelect:
+                case SessionState.Drawing:
+                    return AudioScene.Drawing;
+                case SessionState.Capture:
+                case SessionState.AiRequest:
+                    return AudioScene.Waiting;
+                case SessionState.Result:
+                case SessionState.Card:
+                    return AudioScene.Result;
+                default:
+                    return AudioScene.Idle;
+            }
         }
 
         void Enter(SessionState state)
@@ -169,7 +193,6 @@ namespace Constellation
                     // 카드 화면에서 QR이 바로 보이도록 업로드를 미리 시작한다.
                     cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg);
                     audioManager.PlayResult();
-                    audioManager.SetAmbientDucked(true);
                     break;
 
                 case SessionState.Card:
@@ -437,7 +460,14 @@ namespace Constellation
                 return;
             }
             audioManager.PlayComplete();
+            // 별이 차례로 번쩍이고 선이 새겨지는 연출. AI를 기다리는 동안 이어진다.
+            completionEffect.Play(drawer.SelectedIndices);
             Go(SessionState.Capture);
+        }
+
+        void OnCompletionStarReached(int order)
+        {
+            audioManager.PlayEngraveNote(order + 1);
         }
 
         string UndoHint()
@@ -510,6 +540,7 @@ namespace Constellation
             m_StarCount = 0;
             gestures.Detecting = false;
             keywordSelector.Hide();
+            completionEffect.Stop();
             drawer.Clear();
             starField.Clear();
             m_AiDone = false;
@@ -520,7 +551,6 @@ namespace Constellation
             m_CardReadyTime = -1f;
             resultView.Hide();
             cardService.Clear();
-            audioManager.SetAmbientDucked(false);
             guide.ClearAll();
         }
     }
