@@ -115,6 +115,8 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 하늘 | `enableLake`, `lakeShoreElevation` | 켬, -25° |
 | 하늘 | `skyVignette`, `skyExposure` | 0.35, 1.0 |
 | 하늘 | `enableShootingStars`, `shootingStarInterval` | 켬, 20~45초 |
+| 모두의 하늘 | `enableSharedSky`, `sharedSkyMaxCount`, `sharedSkyLabelCount` | 켬, 40, 12 |
+| 모두의 하늘 | `sharedSkySize`, `sharedSkyBrightness` | 9°, 0.55 |
 | 연출 | `enableLineFlow`, `lineFlowStrength` | 켬, 0.6 |
 | 연출 | `enableCompletionEffect`, `completionStepSeconds` | 켬, 0.18초 |
 | 성능 | `qualityTier` | Medium (Low / Medium / High) |
@@ -163,6 +165,7 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 
 | 항목 | 정한 내용 | 위치 |
 | --- | --- | --- |
+| 모두의 하늘 | 카드를 올릴 때 별자리 모양을 함께 보내 서버 목록에 쌓고 번호를 매긴다. 앱은 `/sky`로 받아 먼 하늘에 그리고, 모니터는 `/wall` 페이지를 띄운다. 명세에 없던 기능 | `worker/src/sky.js`, `SharedSky.cs` |
 | F-12 저장 방식 | Worker의 `/card`가 Cloudflare KV에 30일 보관. 카드는 휴대폰에서 열리는 웹 페이지 | `worker/src/card.js` |
 | 캡처 방식 | 카메라 촬영 대신 별 좌표로 512px 그림을 직접 그림 | `CaptureService.cs` |
 | 완성 방법 | 양손 모으기(F-07)에 더해, 별을 3개 이상 이으면 별 구역 아래에 뜨는 '완성' 별을 집어도 완성된다. 한 손만 쓰는 사람과 양손 인식 실패에 대비한 것 | `FinishButton.cs` |
@@ -200,6 +203,10 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 
 ### 밝기와 화면
 
+- [ ] 위쪽과 뒤쪽 하늘에 다른 사람들의 별자리가 작게 보이고, 잡는 별과 헷갈리지 않는다(`sharedSkyBrightness`).
+- [ ] 이름표가 읽히되 눈에 거슬리지 않는다(`sharedSkyLabelCount`).
+- [ ] 체험을 마치고 대기 화면으로 돌아오면 방금 만든 별자리가 하늘에 더해져 있다.
+
 - [ ] 헤드셋 안에서 하늘이 너무 어둡거나 밝지 않다(`skyExposure`).
 - [ ] 은하수가 보인다(`milkyWayStrength`). 배경 별이 충분히 보인다(`backgroundStarBrightness`).
 - [ ] 작은 배경 별이 머리를 움직일 때 깜빡이지 않는다.
@@ -234,6 +241,14 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 - [ ] 핀치 틱 소리가 너무 크거나 작지 않다(`pinchVolume`).
 - [ ] 완성 순간의 종소리와 화음이 겹쳐 시끄럽지 않다.
 - [ ] 전시장 소음 속에서도 들린다.
+
+## 모두의 하늘과 모니터 화면
+
+방문자들이 만든 별자리가 서버에 쌓이고, 앱은 대기 화면으로 돌아올 때마다 목록을 받아 먼 하늘(잡는 별보다 높은 곳과 뒤쪽)에 작게 그린다. 카드에는 "몇 번째 별자리" 번호가 붙는다.
+
+- 중계 서버에 KV가 연결되어 있어야 한다([worker/README.md](../worker/README.md)). 서버가 없으면 이번 실행에서 만든 별자리만 하늘에 남는다.
+- **모니터**: 전시장 모니터의 브라우저에서 `https://<Worker 주소>/wall`을 전체 화면으로 띄운다. 최근 24개가 보이고 15초마다 새로 고친다. Quest 캐스트 화면과 나란히 두거나 번갈아 띄운다.
+- 전시 전에 시험으로 만든 별자리를 지우려면 KV에서 `sky:index` 키를 지운다(명령은 worker/README.md).
 
 ## 전시 당일 확인
 
