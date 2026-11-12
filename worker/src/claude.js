@@ -39,7 +39,7 @@ export function createAnthropicClient(env) {
  * Claude에 별자리 이미지를 보내고 모델이 낸 텍스트를 돌려준다.
  * 실패(네트워크, 거절, 빈 답)는 예외로 던진다. 호출한 쪽에서 502로 바꾼다.
  */
-export async function requestStoryText(client, env, { keyword, starCount, image }) {
+export async function requestStoryText(client, env, { keyword, starCount, image, tone }) {
   const response = await client.messages.create({
     model: env.CLAUDE_MODEL || DEFAULT_MODEL,
     max_tokens: MAX_TOKENS,
@@ -52,7 +52,7 @@ export async function requestStoryText(client, env, { keyword, starCount, image 
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: "image/jpeg", data: image } },
-          { type: "text", text: buildPrompt(keyword, starCount) },
+          { type: "text", text: buildPrompt(keyword, starCount, tone) },
         ],
       },
     ],
