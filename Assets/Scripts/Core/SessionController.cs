@@ -19,6 +19,7 @@ namespace Constellation
         [NonSerialized] public KeywordSelector keywordSelector;
         [NonSerialized] public StarField starField;
         [NonSerialized] public ConstellationDrawer drawer;
+        [NonSerialized] public CompletionEffect completionEffect;
         [NonSerialized] public CaptureService capture;
         [NonSerialized] public AiClient aiClient;
         [NonSerialized] public FallbackStore fallback;
@@ -68,6 +69,7 @@ namespace Constellation
             drawer.Undone += OnUndone;
             gestures.HandsTogether += OnHandsTogether;
             gestures.UndoRequested += OnUndoRequested;
+            completionEffect.StarReached += OnCompletionStarReached;
 
             m_Started = true;
             State = SessionState.Idle;
@@ -87,6 +89,8 @@ namespace Constellation
                 drawer.MaxReached -= OnMaxStarsReached;
                 drawer.Undone -= OnUndone;
             }
+            if (completionEffect != null)
+                completionEffect.StarReached -= OnCompletionStarReached;
             if (gestures != null)
             {
                 gestures.HandsTogether -= OnHandsTogether;
@@ -437,7 +441,14 @@ namespace Constellation
                 return;
             }
             audioManager.PlayComplete();
+            // 별이 차례로 번쩍이고 선이 새겨지는 연출. AI를 기다리는 동안 이어진다.
+            completionEffect.Play(drawer.SelectedIndices);
             Go(SessionState.Capture);
+        }
+
+        void OnCompletionStarReached(int order)
+        {
+            audioManager.PlayEngraveNote(order + 1);
         }
 
         string UndoHint()
@@ -510,6 +521,7 @@ namespace Constellation
             m_StarCount = 0;
             gestures.Detecting = false;
             keywordSelector.Hide();
+            completionEffect.Stop();
             drawer.Clear();
             starField.Clear();
             m_AiDone = false;

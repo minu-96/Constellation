@@ -47,6 +47,9 @@ namespace Constellation
             ConstellationDrawer drawer = Create<ConstellationDrawer>("Constellation Drawer");
             drawer.Init(config, hands, starField);
 
+            CompletionEffect completionEffect = Create<CompletionEffect>("Completion Effect");
+            completionEffect.Init(config, starField, drawer);
+
             CaptureService capture = Create<CaptureService>("Capture Service");
             capture.Init(config);
 
@@ -77,6 +80,7 @@ namespace Constellation
             session.keywordSelector = keywordSelector;
             session.starField = starField;
             session.drawer = drawer;
+            session.completionEffect = completionEffect;
             session.capture = capture;
             session.aiClient = aiClient;
             session.fallback = fallback;

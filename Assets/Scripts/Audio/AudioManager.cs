@@ -89,6 +89,12 @@ namespace Constellation
                 Play(m_PinchClip, 1f, m_Config.pinchVolume);
         }
 
+        /// <summary>완성 연출에서 빛이 별에 닿을 때마다 나는 여린 종소리. 별마다 음이 올라간다.</summary>
+        public void PlayEngraveNote(int starNumber)
+        {
+            Play(m_SoftBellClip, PitchFor(starNumber, m_Config.lineConnectClip != null) * 2f, 0.4f);
+        }
+
         public void PlayUndo()
         {
             Play(m_UndoClip, 1f, 0.7f);
