@@ -322,8 +322,50 @@ namespace Constellation
         float m_SimYaw;
         float m_SimPitch;
 
+        /// <summary>
+        /// 자동 스크린샷용 대본. 켜져 있으면 마우스·키보드 대신 이 값으로 손과 시선을 움직인다(ScreenshotDirector).
+        /// </summary>
+        public class SimScript
+        {
+            public bool handVisible;
+            public Vector3 point;
+            public bool pinch;
+            /// <summary>0: 왼손 없음, 1: 두 손 떨어짐, 2: 두 손 모음</summary>
+            public int bothMode;
+            public float yaw;
+            public float pitch;
+        }
+
+        /// <summary>null이 아니면 대본대로 움직인다.</summary>
+        public SimScript Script { get; set; }
+
+        bool SimulateScripted()
+        {
+            if (m_Origin != null && !UnityEngine.XR.XRSettings.isDeviceActive)
+                m_Origin.rotation = Quaternion.Euler(-Script.pitch, Script.yaw, 0f);
+
+            if (!Script.handVisible || m_Camera == null)
+            {
+                m_Hands[0].ClearTracking();
+                m_Hands[1].ClearTracking();
+                return true;
+            }
+
+            FillSimulatedHand(m_Hands[1], Script.point, Script.pinch, false);
+            if (Script.bothMode == 1)
+                FillSimulatedHand(m_Hands[0], Script.point - m_Camera.transform.right * 0.3f, false, true);
+            else if (Script.bothMode == 2)
+                FillSimulatedHand(m_Hands[0], Script.point + m_Camera.transform.right * k_SimTogetherOffset, false, true);
+            else
+                m_Hands[0].ClearTracking();
+            return true;
+        }
+
         bool SimulateHands()
         {
+            if (Script != null)
+                return SimulateScripted();
+
             Keyboard keyboard = Keyboard.current;
             Mouse mouse = Mouse.current;
             if (keyboard == null || mouse == null || m_Camera == null)
