@@ -121,6 +121,7 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 키워드별 하늘 | `enableKeywordSky`, `keywordSkyIntensity` | 켬, 1.0 |
 | 연출 | `enableLineFlow`, `lineFlowStrength` | 켬, 0.6 |
 | 연출 | `enableCompletionEffect`, `completionStepSeconds` | 켬, 0.18초 |
+| 연출 | `enableCompletionRipple`, `enableWaterRipples` | 켬, 켬 |
 | 성능 | `qualityTier` | Medium (Low / Medium / High) |
 | 성능 | `usePostProcessing`, `ambientParticleCount` | 끔(High에서만 적용), 120 |
 | 후처리 | `bloomIntensity`, `bloomThreshold`, `bloomScatter` | 0.9, 0.8, 0.65 |
@@ -205,6 +206,9 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 - [ ] (선택) High + `usePostProcessing`을 켰을 때도 72fps가 나오는지 본다.
 
 ### 밝기와 화면
+
+- [ ] 별자리가 새겨지는 순간 주변 별들이 바깥으로 차례로 반짝이며 사라지고, 배경 별이 잠깐 밝아진다.
+- [ ] 손을 지평선 아래(호수 쪽)로 내려 움직이면 그 자리에서 물결이 퍼진다. 어지럽지 않다.
 
 - [ ] 키워드 세 개를 각각 골랐을 때 유성우, 오로라, 반딧불이 보이고 별 잇기를 방해하지 않는다(`keywordSkyIntensity`).
 - [ ] 오로라가 잡는 별 뒤에서 너무 밝아 별이 묻히지 않는다.
