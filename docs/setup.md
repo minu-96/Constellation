@@ -101,10 +101,10 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 시간 | `resultSeconds` / `cardSeconds` | 14 / 20초 |
 | 시간 | `endCooldownSeconds` / `aiMinWaitSeconds` | 5 / 3초 |
 | 별 구역 | `posture` | Standing (다른 선택지: Seated, Custom) |
-| 별 구역 | `standingZone` (고도, 좌우, 거리) | +10°~+35°, ±55°, 0.45 m |
-| 별 구역 | `seatedZone` (고도, 좌우, 거리) | +10°~+32°, ±55°, 0.40 m |
+| 별 구역 | `standingZone` (고도, 좌우, 거리) | +10°~+45°, ±90°, 0.45 m |
+| 별 구역 | `seatedZone` (고도, 좌우, 거리) | +10°~+40°, ±90°, 0.40 m |
 | 별 구역 | `ridgeMaxElevation`, `starRidgeMargin` | 8°, 2° |
-| 별 구역 | `starRows`, `starJitter` | 3줄, 0.35 |
+| 별 구역 | `starRows`, `starJitter` | 4줄, 0.35 |
 | 배치 | `guideElevation`, `guideTextSize`, `resultStorySize` | -27°, 0.075 m, 0.095 m |
 | 하늘 | `enableStarDome`, `backgroundStarCount`, `backgroundStarBrightness` | 켬, 3200, 1.0 |
 | 하늘 | `enableMilkyWay`, `milkyWayStrength` | 켬, 1.0 |

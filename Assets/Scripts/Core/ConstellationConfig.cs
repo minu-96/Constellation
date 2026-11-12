@@ -128,7 +128,7 @@ namespace Constellation
 
         [Header("별 (확정)")]
         [Tooltip("하늘에 뿌리는 후보 별 개수")]
-        public int candidateStarCount = 30;
+        public int candidateStarCount = 60;
         [Tooltip("완성에 필요한 최소 별 개수")]
         public int minStars = 3;
         [Tooltip("이을 수 있는 최대 별 개수")]
@@ -235,9 +235,9 @@ namespace Constellation
         [Tooltip("체험 자세. Standing/Seated는 아래 프리셋을, Custom은 customZone을 쓴다")]
         public PlayPosture posture = PlayPosture.Standing;
         [Tooltip("서서 하는 경우")]
-        public StarZonePreset standingZone = new StarZonePreset { elevationMin = 10f, elevationMax = 35f, azimuthHalfRange = 55f, distance = 0.45f };
+        public StarZonePreset standingZone = new StarZonePreset { elevationMin = 10f, elevationMax = 45f, azimuthHalfRange = 90f, distance = 0.45f };
         [Tooltip("앉아서 하는 경우. 덜 뻗고 덜 올려도 닿게 한다")]
-        public StarZonePreset seatedZone = new StarZonePreset { elevationMin = 10f, elevationMax = 32f, azimuthHalfRange = 55f, distance = 0.40f };
+        public StarZonePreset seatedZone = new StarZonePreset { elevationMin = 10f, elevationMax = 40f, azimuthHalfRange = 90f, distance = 0.40f };
         [Tooltip("직접 정하는 경우")]
         public StarZonePreset customZone = new StarZonePreset();
         [Tooltip("능선(산 실루엣)의 최고 높이(도). 잡는 별은 이보다 위에만 놓는다")]
@@ -245,7 +245,7 @@ namespace Constellation
         [Tooltip("능선과 잡는 별 사이에 두는 여유(도)")]
         public float starRidgeMargin = 2f;
         [Tooltip("별을 놓는 줄 수. 한 줄의 칸 수는 후보 별 개수에서 정해진다")]
-        [Range(1, 6)] public int starRows = 3;
+        [Range(1, 6)] public int starRows = 4;
         [Tooltip("칸 안에서 별을 흔드는 정도(0이면 반듯한 격자, 클수록 불규칙). 크면 별끼리 가까워진다")]
         [Range(0f, 0.8f)] public float starJitter = 0.35f;
         [Tooltip("손이 이 거리 안으로 오면 별이 조금씩 커지기 시작한다(잡기 반경 바깥으로 더한 거리, m)")]
