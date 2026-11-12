@@ -116,11 +116,23 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 연출 | `enableCompletionEffect`, `completionStepSeconds` | 켬, 0.18초 |
 | 성능 | `qualityTier` | Medium (Low / Medium / High) |
 | 성능 | `usePostProcessing`, `ambientParticleCount` | 끔(High에서만 적용), 120 |
+| 후처리 | `bloomIntensity`, `bloomThreshold`, `bloomScatter` | 0.9, 0.8, 0.65 |
+| 후처리 | `bloomQuarterResolution`, `bloomIterations` | 켬, 3 |
+| 후처리 | `vignetteIntensity`, `postContrast`, `postSaturation` | 0.15, 8, 6 |
+| 후처리 | `postTonemapping`, `filmGrainIntensity` | 끔, 0 |
 | 캡처 | `captureJpegQuality` | 80 |
 
 중계 서버 쪽 값은 `worker/wrangler.toml`의 `[vars]`에 있다: `RATE_LIMIT_PER_MINUTE`(6), `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CARD_TTL_DAYS`.
 
 프레임이 떨어지면 `qualityTier`를 Low로 낮춘다. Low에서는 배경 별이 절반으로 줄고, 호수에 비친 별·별똥별·먼지 입자가 꺼진다. 그래도 모자라면 `enableLake`, `enableRidgeLayers`, `enableMilkyWay` 순서로 끈다.
+
+### URP 후처리 켜 보기
+
+기본 화면은 후처리 없이 그린다. 블룸을 시험하려면 `qualityTier`를 High로, `usePostProcessing`을 켠다. 둘 다 맞아야 적용된다.
+
+- 켠 뒤 기기에서 72fps가 유지되는지 먼저 본다. 떨어지면 `bloomIterations`를 2로 낮추고, 그래도 안 되면 끈다.
+- 톤매핑(`postTonemapping`)은 URP 에셋의 HDR이 켜져 있을 때만 의미가 있다. 지금은 HDR이 꺼져 있고, 켜면 비용이 더 든다.
+- 필름 그레인은 VR에서 두 눈에 다른 잡음이 보여 거슬릴 수 있다. 0으로 두는 것을 권한다.
 
 헤드셋 안에서 하늘이 너무 어둡거나 밝으면 `skyExposure`를, 별이 약하면 `backgroundStarBrightness`를 조정한다.
 
