@@ -90,6 +90,32 @@ namespace Constellation
         [Tooltip("Low: 가장 가벼움 / Medium: 기본 / High: URP 후처리 허용")]
         public QualityTier qualityTier = QualityTier.Medium;
 
+        [Header("하늘과 지형 (효과별 켜고 끄기)")]
+        [Tooltip("배경 별을 메시로 그린다. 끄면 배경 별이 없다")]
+        public bool enableStarDome = true;
+        [Tooltip("배경 별 개수. 품질 단계가 Low면 절반만 쓴다")]
+        public int backgroundStarCount = 3200;
+        [Tooltip("배경 별 밝기")]
+        [Range(0f, 3f)] public float backgroundStarBrightness = 1f;
+        [Tooltip("은하수를 그린다")]
+        public bool enableMilkyWay = true;
+        [Tooltip("은하수 밝기")]
+        [Range(0f, 3f)] public float milkyWayStrength = 1f;
+        [Tooltip("능선을 세 겹으로 그린다. 끄면 가까운 언덕 한 겹만 그린다")]
+        public bool enableRidgeLayers = true;
+        [Tooltip("지평선 아래에 호수와 반사를 그린다. 끄면 어두운 땅만 그린다")]
+        public bool enableLake = true;
+        [Tooltip("호수가 끝나고 발밑의 땅이 시작되는 각도(도, 음수). 안내 글자가 물 위에 오게 하려면 더 낮춘다")]
+        public float lakeShoreElevation = -25f;
+        [Tooltip("시선 가장자리를 어둡게 하는 정도(하늘 셰이더 안에서 처리, 추가 비용 없음)")]
+        [Range(0f, 1f)] public float skyVignette = 0.35f;
+        [Tooltip("하늘 전체 밝기. 헤드셋에서 어둡거나 밝으면 조정한다")]
+        [Range(0.3f, 3f)] public float skyExposure = 1f;
+        [Tooltip("가끔 별똥별이 지나간다")]
+        public bool enableShootingStars = true;
+        [Tooltip("별똥별 사이의 간격(초, 최소~최대)")]
+        public Vector2 shootingStarInterval = new Vector2(20f, 45f);
+
         // ------------------------------------------------------------------ 확정값
 
         [Header("별 (확정)")]
@@ -279,7 +305,13 @@ namespace Constellation
 
         [Header("색")]
         public Color skyZenithColor = new Color(0.012f, 0.02f, 0.075f);
-        public Color skyHorizonColor = new Color(0.16f, 0.11f, 0.36f);
+        public Color skyHorizonColor = new Color(0.11f, 0.09f, 0.27f);
+        [Tooltip("지평선의 대기광과 먼 능선에 섞이는 안개 색")]
+        public Color skyHazeColor = new Color(0.34f, 0.27f, 0.50f);
+        [Tooltip("호수에 비친 하늘에 곱하는 색")]
+        public Color waterTint = new Color(0.42f, 0.48f, 0.70f);
+        [Tooltip("발밑 땅의 색")]
+        public Color groundColor = new Color(0.004f, 0.005f, 0.014f);
         public Color hillColor = new Color(0.006f, 0.008f, 0.025f);
         public Color starColor = new Color(0.78f, 0.86f, 1.0f);
         public Color starHoverColor = new Color(1.0f, 1.0f, 1.0f);
