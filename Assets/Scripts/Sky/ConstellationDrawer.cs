@@ -22,7 +22,11 @@ namespace Constellation
         StarField m_StarField;
         LineRenderer m_Line;
         LineRenderer m_Preview;
+        // 지나간 순서대로의 별 번호. 닫힌 모양을 그릴 수 있게 같은 별이 다시 나올 수 있다.
         readonly List<int> m_Selected = new List<int>();
+        int m_Unique;
+        int m_DwellIndex = -1;
+        float m_DwellStart;
         bool m_Active;
         float m_Grow = 1f;
         float m_NextMaxNotice;
@@ -30,8 +34,11 @@ namespace Constellation
         readonly bool[] m_DragArmed = new bool[2];
 
         const float k_GrowSeconds = 0.22f;
+        // 이미 이은 별로 다시 이으려면 끌던 손이 이 시간 동안 그 별에 머물러야 한다(지나가다 붙지 않게).
+        const float k_RevisitDwellSeconds = 0.3f;
 
-        public int Count { get { return m_Selected.Count; } }
+        /// <summary>이은 별의 개수(같은 별을 다시 지나도 한 번만 센다).</summary>
+        public int Count { get { return m_Unique; } }
         public IList<int> SelectedIndices { get { return m_Selected; } }
 
         public void Init(ConstellationConfig config, HandInput hands, StarField starField)
@@ -76,6 +83,8 @@ namespace Constellation
         {
             m_Active = false;
             m_Selected.Clear();
+            m_Unique = 0;
+            m_DwellIndex = -1;
             m_Grow = 1f;
             if (m_Line != null)
                 m_Line.positionCount = 0;
@@ -90,10 +99,16 @@ namespace Constellation
                 return;
             int last = m_Selected[m_Selected.Count - 1];
             m_Selected.RemoveAt(m_Selected.Count - 1);
-            m_StarField.SetSelected(last, false);
+            // 다른 구간에서 아직 지나는 별이면 밝은 채로 둔다.
+            if (!m_Selected.Contains(last))
+            {
+                m_StarField.SetSelected(last, false);
+                m_Unique--;
+            }
+            m_DwellIndex = -1;
             m_Grow = 1f;
             if (Undone != null)
-                Undone(m_Selected.Count);
+                Undone(m_Unique);
         }
 
         void OnPinchStarted(HandSide side, Vector3 position)
@@ -108,11 +123,37 @@ namespace Constellation
 
         void TrySelect(Vector3 position, float radius)
         {
-            int index = m_StarField.FindNearest(position, radius);
-            if (index < 0 || m_StarField.IsSelected(index))
+            // 처음 핀치로 잡을 때는 이미 이은 별도 바로 이을 수 있다.
+            TrySelectIndex(m_StarField.FindNearest(position, radius), false);
+        }
+
+        // requireDwell: 이미 이은 별로 다시 이을 때 잠시 머물러야 하는지.
+        void TrySelectIndex(int index, bool requireDwell)
+        {
+            if (index < 0)
                 return;
 
-            if (m_Selected.Count >= m_Config.maxStars)
+            bool already = m_StarField.IsSelected(index);
+            if (already)
+            {
+                // 방금 이은 별로 또 잇지는 않는다.
+                if (m_Selected.Count == 0 || m_Selected[m_Selected.Count - 1] == index)
+                    return;
+                if (requireDwell)
+                {
+                    if (index != m_DwellIndex)
+                    {
+                        m_DwellIndex = index;
+                        m_DwellStart = Time.unscaledTime;
+                        return;
+                    }
+                    if (Time.unscaledTime - m_DwellStart < k_RevisitDwellSeconds)
+                        return;
+                }
+            }
+
+            // 새 별은 별 개수 한도로, 이미 이은 별을 다시 이을 때는 선 개수 한도(별 한도의 두 배)로 막는다.
+            if ((!already && m_Unique >= m_Config.maxStars) || m_Selected.Count >= m_Config.maxStars * 2)
             {
                 // 끌고 있는 동안 매 프레임 알리지 않도록 간격을 둔다.
                 if (Time.unscaledTime >= m_NextMaxNotice)
@@ -125,12 +166,15 @@ namespace Constellation
             }
 
             m_Selected.Add(index);
+            m_DwellIndex = -1;
+            if (!already)
+                m_Unique++;
             if (m_Config.logStateChanges)
-                Debug.Log("[Drawer] 별 선택 " + index + " 누적 " + m_Selected.Count);
+                Debug.Log("[Drawer] 별 선택 " + index + (already ? " (다시 이음)" : "") + " 별 " + m_Unique + "개, 선 " + m_Selected.Count + "점");
             m_StarField.SetSelected(index, true);
             m_Grow = 0f;
             if (StarAdded != null)
-                StarAdded(m_Selected.Count);
+                StarAdded(m_Unique);
         }
 
         void Update()
@@ -162,16 +206,24 @@ namespace Constellation
                 m_DragArmed[1] = false;
         }
 
-        // 끌고 있는 손이 가리키는 별을 찾아 잇는다. 아직 잇지 않은 별만 후보로 보여 준다.
+        // 끌고 있는 손이 가리키는 별을 찾아 잇는다. 이미 이은 별도 후보지만 방금 이은 별은 뺀다.
         void DragSelect(Vector3 handPoint, ref int hover)
         {
             Camera cam = Camera.main;
             if (cam == null)
                 return;
-            int index = m_StarField.FindNearestByAngle(handPoint, cam.transform.position, m_Config.dragSnapAngle, m_Config.dragSnapDepthTolerance, true);
+            int exclude = m_Selected.Count > 0 ? m_Selected[m_Selected.Count - 1] : -1;
+            int index = m_StarField.FindNearestByAngle(handPoint, cam.transform.position, m_Config.dragSnapAngle, m_Config.dragSnapDepthTolerance, false, exclude);
             hover = index;
-            if (index >= 0)
-                TrySelect(m_StarField.GetWorldPosition(index), 0.001f);
+            if (index < 0)
+            {
+                m_DwellIndex = -1;
+                return;
+            }
+            bool already = m_StarField.IsSelected(index);
+            if (!already)
+                m_DwellIndex = -1;
+            TrySelectIndex(index, already);
         }
 
         void LateUpdate()
@@ -181,7 +233,10 @@ namespace Constellation
 
             // 별이 사라졌으면(초기화) 선도 지운다.
             if (m_Selected.Count > 0 && m_StarField.Count == 0)
+            {
                 m_Selected.Clear();
+                m_Unique = 0;
+            }
 
             float scale = m_StarField.CurrentScale;
             int count = m_Selected.Count;
@@ -209,7 +264,7 @@ namespace Constellation
         {
             bool show = false;
             Vector3 target = Vector3.zero;
-            if (m_Active && count > 0 && count < m_Config.maxStars)
+            if (m_Active && count > 0 && count < m_Config.maxStars * 2)
             {
                 HandState right = m_Hands.Right;
                 HandState left = m_Hands.Left;
