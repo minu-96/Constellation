@@ -119,6 +119,8 @@ namespace Constellation
         public bool enableCompletionEffect = true;
         [Tooltip("완성 연출에서 별 하나에서 다음 별로 넘어가는 시간(초)")]
         public float completionStepSeconds = 0.18f;
+        [Tooltip("헤드셋 안의 카드 화면에도 QR을 띄운다. 기본은 끔: QR은 모니터 페이지(/wall)에서 찍는다")]
+        public bool showQrInHeadset = false;
         [Tooltip("모두의 하늘: 앞선 방문자들의 별자리를 먼 하늘에 그린다(중계 서버의 /sky 에서 받아 온다)")]
         public bool enableSharedSky = true;
         [Tooltip("하늘에 그리는 별자리의 최대 개수(최근 것부터)")]
@@ -251,7 +253,7 @@ namespace Constellation
         [Tooltip("결과 화면 유지 시간(초)")]
         public float resultSeconds = 14f;
         [Tooltip("결과 카드(QR) 화면 유지 시간(초)")]
-        public float cardSeconds = 20f;
+        public float cardSeconds = 12f;
         [Tooltip("카드 업로드를 기다리는 최대 시간(초)")]
         public float cardUploadTimeoutSeconds = 8f;
         [Tooltip("체험이 끝난 뒤 다음 체험을 받기까지 쉬는 시간(초)")]
@@ -348,7 +350,9 @@ namespace Constellation
         public string msgCardNumber = "{0}번째 별자리";
         [Tooltip("모두의 하늘 이름표. {0}: 이름, {1}: 번호")]
         public string msgSharedSkyLabel = "{0} · {1}번째";
-        public string msgCardReady = "QR을 찍으면 카드를 받을 수 있어요";
+        public string msgCardReady = "모니터의 QR을 찍으면 카드를 받을 수 있어요";
+        [Tooltip("헤드셋 안에 QR을 띄울 때 쓰는 문구")]
+        public string msgCardReadyWithQr = "QR을 찍으면 카드를 받을 수 있어요";
         public string msgGoodbye = "함께해 주셔서 고마워요";
 
         // ------------------------------------------------------------------ 비주얼

@@ -8,8 +8,9 @@ using UnityEngine.Networking;
 namespace Constellation
 {
     /// <summary>
-    /// 결과 카드(F-12). 이름·이야기·별자리 이미지를 중계 서버에 올리고, 받은 주소를 QR로 보여 준다.
-    /// 휴대폰으로 QR을 찍으면 서버가 카드 페이지를 보여 준다.
+    /// 결과 카드(F-12). 이름·이야기·별자리 이미지를 중계 서버에 올리고, 헤드셋 안에는 카드 미리보기와 번호를 보여 준다.
+    /// QR은 기본적으로 전시장 모니터 페이지(/wall)에 뜬다. 휴대폰으로 찍으면 서버가 카드 페이지를 보여 준다.
+    /// (설정의 showQrInHeadset을 켜면 헤드셋 안에도 QR을 띄운다.)
     /// 업로드에 실패하면 HasFailed가 true가 되고, SessionController가 카드 없이 끝낸다.
     /// </summary>
     public class CardService : MonoBehaviour
@@ -73,17 +74,21 @@ namespace Constellation
             m_Root.gameObject.SetActive(false);
         }
 
-        // 왼쪽: 별자리 그림, 이름, 이야기 / 오른쪽: QR과 안내
+        // QR을 띄울 때: 왼쪽에 별자리 그림·이름·이야기, 오른쪽에 QR과 안내
+        // QR을 띄우지 않을 때(기본): 가운데에 그림·이름·이야기, 맨 아래에 안내. QR은 모니터 페이지에서 찍는다.
         void BuildPanel()
         {
             m_Root = new GameObject("Card Panel").transform;
             m_Root.SetParent(transform, false);
 
-            VisualFactory.CreatePanel("Background", m_Root, new Vector2(k_PanelWidth, k_PanelHeight), new Color(0.03f, 0.04f, 0.11f, 0.86f), null)
-                .transform.localPosition = new Vector3(0f, 0f, 0.01f);
+            bool withQr = m_Config.showQrInHeadset;
+            float width = withQr ? k_PanelWidth : k_PanelWidth * 0.56f;
+            float height = withQr ? k_PanelHeight : k_PanelHeight * 1.12f;
+            VisualFactory.CreatePanel("Background", m_Root, new Vector2(width, height), new Color(0.03f, 0.04f, 0.11f, 0.86f), null)
+                .transform.localPosition = new Vector3(0f, withQr ? 0f : -0.04f, 0.01f);
 
-            float leftX = -k_PanelWidth * 0.24f;
-            float rightX = k_PanelWidth * 0.26f;
+            float leftX = withQr ? -k_PanelWidth * 0.24f : 0f;
+            float rightX = withQr ? k_PanelWidth * 0.26f : 0f;
 
             m_Image = VisualFactory.CreatePanel("Constellation Image", m_Root, new Vector2(0.34f, 0.34f), Color.white, null);
             m_Image.transform.localPosition = new Vector3(leftX, 0.15f, 0f);
@@ -104,7 +109,7 @@ namespace Constellation
             m_Qr.enabled = false;
 
             m_Caption = TextFactory.Create("Card Caption", m_Root, 0.034f, new Vector2(0.5f, 0.1f), TextAlignmentOptions.Center, m_Config.textColor);
-            m_Caption.transform.localPosition = new Vector3(rightX, -0.24f, 0f);
+            m_Caption.transform.localPosition = new Vector3(rightX, withQr ? -0.24f : -0.385f, 0f);
         }
 
         /// <summary>카드 데이터를 서버에 올리기 시작한다. 결과 화면에 들어갈 때 미리 부른다.</summary>
@@ -187,8 +192,15 @@ namespace Constellation
             if (id != m_UploadId)
                 yield break;
 
-            Texture2D qr = url != null ? QrEncoder.ToTexture(QrEncoder.Encode(url), 8, 4) : null;
-            if (qr == null)
+            if (url == null)
+            {
+                m_State = UploadState.Failed;
+                yield break;
+            }
+
+            // QR은 헤드셋 안에 띄울 때만 만든다. 기본은 모니터 페이지에서 찍는다.
+            Texture2D qr = m_Config.showQrInHeadset ? QrEncoder.ToTexture(QrEncoder.Encode(url), 8, 4) : null;
+            if (m_Config.showQrInHeadset && qr == null)
             {
                 m_State = UploadState.Failed;
                 yield break;
@@ -249,8 +261,8 @@ namespace Constellation
             m_Root.localScale = Vector3.one * Mathf.Lerp(0.9f, 1f, Mathf.SmoothStep(0f, 1f, m_Appear));
 
             bool ready = m_State == UploadState.Ready;
-            m_Qr.enabled = ready;
-            m_Caption.text = ready ? m_Config.msgCardReady : m_Config.msgCardWaiting;
+            m_Qr.enabled = ready && m_Config.showQrInHeadset;
+            m_Caption.text = !ready ? m_Config.msgCardWaiting : m_Config.showQrInHeadset ? m_Config.msgCardReadyWithQr : m_Config.msgCardReady;
             m_Number.text = ready && CardNumber > 0 ? string.Format(m_Config.msgCardNumber, CardNumber) : string.Empty;
         }
 
