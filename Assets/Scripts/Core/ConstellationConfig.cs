@@ -131,6 +131,10 @@ namespace Constellation
         public float sharedSkySize = 9f;
         [Tooltip("모두의 하늘 밝기. 잡는 별을 방해하지 않게 어둡게 둔다")]
         [Range(0f, 2f)] public float sharedSkyBrightness = 0.55f;
+        [Tooltip("키워드마다 하늘이 달라진다(소원: 유성우, 모험: 오로라, 소중한 사람: 반딧불)")]
+        public bool enableKeywordSky = true;
+        [Tooltip("키워드별 하늘 효과의 세기")]
+        [Range(0f, 2f)] public float keywordSkyIntensity = 1f;
         [Tooltip("가끔 별똥별이 지나간다")]
         public bool enableShootingStars = true;
         [Tooltip("별똥별 사이의 간격(초, 최소~최대)")]
