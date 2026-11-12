@@ -28,6 +28,7 @@ namespace Constellation
         [NonSerialized] public GatherEffect gatherEffect;
         [NonSerialized] public ResultView resultView;
         [NonSerialized] public CardService cardService;
+        [NonSerialized] public SharedSky sharedSky;
         [NonSerialized] public AudioManager audioManager;
 
         /// <summary>상태가 바뀐 뒤에 알린다(이전 상태, 새 상태).</summary>
@@ -42,6 +43,8 @@ namespace Constellation
         int m_StarCount;
         byte[] m_CaptureJpeg;
         Texture2D m_CaptureTexture;
+        // 별자리 모양(0~1로 맞춘 점들). 카드와 함께 올려 모두의 하늘에 쌓는다.
+        System.Collections.Generic.List<Vector2> m_Shape;
         string m_ResultName;
         string m_ResultStory;
         bool m_AiDone;
@@ -149,6 +152,8 @@ namespace Constellation
             {
                 case SessionState.Idle:
                     ResetSession();
+                    // 대기 화면으로 돌아올 때마다 모두의 하늘을 새로 받아 온다.
+                    sharedSky.Refresh();
                     guide.SetElevation(config.guideElevationIdle);
                     guide.SetTitle(config.msgTitle);
                     guide.SetHint(Now < m_IdleReadyTime ? config.msgGoodbye : config.msgIdle);
@@ -199,7 +204,7 @@ namespace Constellation
                     starField.RaiseToSky(true);
                     resultView.Show(m_ResultName, m_ResultStory, m_AnchorPosition, m_AnchorRotation);
                     // 카드 화면에서 QR이 바로 보이도록 업로드를 미리 시작한다.
-                    cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg);
+                    cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg, m_Shape);
                     audioManager.PlayResult();
                     break;
 
@@ -238,6 +243,9 @@ namespace Constellation
                     break;
 
                 case SessionState.Card:
+                    // 서버에 올라가지 못한 별자리도 이번 실행 동안에는 하늘에 남긴다(올라간 것은 다음 목록에 들어 있다).
+                    if (cardService.CardNumber <= 0 && m_Keyword != null)
+                        sharedSky.AddLocal(m_ResultName, m_Keyword.id, m_Shape);
                     // 체험이 끝났다. 같은 사람이 손을 든 채로 곧바로 다시 시작되지 않게 잠시 쉰다.
                     m_IdleReadyTime = Now + config.endCooldownSeconds;
                     m_SawNoHandsSinceEnd = false;
@@ -384,7 +392,9 @@ namespace Constellation
             try
             {
                 ReleaseCapture();
-                ok = capture.TryCapture(starField.GetProjectedPoints(drawer.SelectedIndices), out m_CaptureJpeg, out m_CaptureTexture);
+                System.Collections.Generic.List<Vector2> projected = starField.GetProjectedPoints(drawer.SelectedIndices);
+                m_Shape = SharedSky.NormalizePoints(projected, 16);
+                ok = capture.TryCapture(projected, out m_CaptureJpeg, out m_CaptureTexture);
             }
             catch (Exception e)
             {
@@ -628,6 +638,7 @@ namespace Constellation
             m_KeywordChosenTime = -1f;
             m_ResultName = null;
             m_ResultStory = null;
+            m_Shape = null;
             m_HandHoldSeconds = 0f;
             m_StarCount = 0;
             gestures.Detecting = false;

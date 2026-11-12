@@ -77,6 +77,9 @@ namespace Constellation
             AudioManager audioManager = Create<AudioManager>("Audio Manager");
             audioManager.Init(config, headCamera.transform);
 
+            SharedSky sharedSky = Create<SharedSky>("Shared Sky");
+            sharedSky.Init(config, headCamera.transform);
+
             SessionController session = Create<SessionController>("Session Controller");
             session.config = config;
             session.head = headCamera.transform;
@@ -95,6 +98,7 @@ namespace Constellation
             session.gatherEffect = gatherEffect;
             session.resultView = resultView;
             session.cardService = cardService;
+            session.sharedSky = sharedSky;
             session.audioManager = audioManager;
             session.Begin();
 
