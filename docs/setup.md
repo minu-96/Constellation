@@ -115,6 +115,7 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 하늘 | `enableLake`, `lakeShoreElevation` | 켬, -25° |
 | 하늘 | `skyVignette`, `skyExposure` | 0.35, 1.0 |
 | 하늘 | `enableShootingStars`, `shootingStarInterval` | 켬, 20~45초 |
+| 카드 | `showQrInHeadset`, `cardSeconds` | 끔, 12초 |
 | 모두의 하늘 | `enableSharedSky`, `sharedSkyMaxCount`, `sharedSkyLabelCount` | 켬, 40, 12 |
 | 모두의 하늘 | `sharedSkySize`, `sharedSkyBrightness` | 9°, 0.55 |
 | 연출 | `enableLineFlow`, `lineFlowStrength` | 켬, 0.6 |
@@ -247,7 +248,8 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 방문자들이 만든 별자리가 서버에 쌓이고, 앱은 대기 화면으로 돌아올 때마다 목록을 받아 먼 하늘(잡는 별보다 높은 곳과 뒤쪽)에 작게 그린다. 카드에는 "몇 번째 별자리" 번호가 붙는다.
 
 - 중계 서버에 KV가 연결되어 있어야 한다([worker/README.md](../worker/README.md)). 서버가 없으면 이번 실행에서 만든 별자리만 하늘에 남는다.
-- **모니터**: 전시장 모니터의 브라우저에서 `https://<Worker 주소>/wall`을 전체 화면으로 띄운다. 최근 24개가 보이고 15초마다 새로 고친다. Quest 캐스트 화면과 나란히 두거나 번갈아 띄운다.
+- **모니터**: 전시장 모니터의 브라우저에서 `https://<Worker 주소>/wall`을 전체 화면으로 띄운다. 최근 24개가 보이고 15초마다 새로 고친다.
+- **QR은 모니터에 뜬다**: 가장 최근 3개의 별자리 옆에 카드로 가는 QR이 붙는다. 체험을 마친 사람이 헤드셋을 벗고 모니터에서 자기 별자리(번호로 찾는다)의 QR을 찍는다. 헤드셋 안에는 QR을 띄우지 않는다(`showQrInHeadset`으로 켤 수 있다). Quest 캐스트 화면과 나란히 두거나 번갈아 띄운다.
 - 전시 전에 시험으로 만든 별자리를 지우려면 KV에서 `sky:index` 키를 지운다(명령은 worker/README.md).
 
 ## 전시 당일 확인
