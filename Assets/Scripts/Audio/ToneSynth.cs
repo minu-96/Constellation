@@ -35,6 +35,22 @@ namespace Constellation
             return Build("Bell", samples, sampleRate);
         }
 
+        /// <summary>아주 짧고 부드러운 틱 소리(핀치).</summary>
+        public static AudioClip Tick(int sampleRate, float frequency, float seconds)
+        {
+            int count = Mathf.CeilToInt(sampleRate * seconds);
+            float[] samples = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                float t = i / (float)sampleRate;
+                float attack = Mathf.Clamp01(t / 0.002f);
+                float value = Mathf.Sin(k_Tau * frequency * t) * Mathf.Exp(-t * 70f)
+                    + 0.4f * Mathf.Sin(k_Tau * frequency * 0.5f * t) * Mathf.Exp(-t * 45f);
+                samples[i] = value * attack * 0.3f * FadeOut(i, count, sampleRate);
+            }
+            return Build("Tick", samples, sampleRate);
+        }
+
         /// <summary>여러 음을 조금씩 간격을 두고 차례로 울리는 화음.</summary>
         public static AudioClip Chord(int sampleRate, float[] frequencies, float stagger, float seconds)
         {

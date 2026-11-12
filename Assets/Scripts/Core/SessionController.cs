@@ -368,6 +368,9 @@ namespace Constellation
         void OnPinchStarted(HandSide side, Vector3 position)
         {
             m_LastActivityTime = Now;
+            // 손으로 무언가를 고르는 상태에서만 핀치 소리를 낸다.
+            if (State == SessionState.KeywordSelect || State == SessionState.Drawing)
+                audioManager.PlayPinch();
         }
 
         void OnKeywordSelected(KeywordDefinition keyword)

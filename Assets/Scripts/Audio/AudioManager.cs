@@ -25,6 +25,7 @@ namespace Constellation
         AudioClip m_BellClip;
         AudioClip m_SoftBellClip;
         AudioClip m_UndoClip;
+        AudioClip m_PinchClip;
         AudioClip m_SelectClip;
         AudioClip m_CompleteClip;
         AudioClip m_ResultClip;
@@ -39,6 +40,7 @@ namespace Constellation
             m_BellClip = config.starGrabClip != null ? config.starGrabClip : ToneSynth.Bell(k_SampleRate, k_BaseFrequency, 1.6f, 1f);
             m_SoftBellClip = config.lineConnectClip != null ? config.lineConnectClip : ToneSynth.Bell(k_SampleRate, k_BaseFrequency, 1.2f, 0.6f);
             m_UndoClip = config.undoClip != null ? config.undoClip : ToneSynth.Sweep(k_SampleRate, 620f, 300f, 0.28f);
+            m_PinchClip = config.pinchClip != null ? config.pinchClip : ToneSynth.Tick(k_SampleRate, 1900f, 0.07f);
             m_SelectClip = config.keywordSelectClip != null ? config.keywordSelectClip : ToneSynth.Chord(k_SampleRate, new[] { 523.25f, 783.99f }, 0.09f, 1.4f);
             m_CompleteClip = config.completeClip != null ? config.completeClip : ToneSynth.Chord(k_SampleRate, new[] { 523.25f, 659.25f, 783.99f, 1046.5f }, 0.11f, 2.2f);
             m_ResultClip = config.resultClip != null ? config.resultClip : ToneSynth.Chord(k_SampleRate, new[] { 392f, 523.25f, 659.25f, 987.77f }, 0.22f, 3.2f);
@@ -78,6 +80,13 @@ namespace Constellation
             bool custom = m_Config.starGrabClip != null || m_Config.lineConnectClip != null;
             Play(m_BellClip, PitchFor(starNumber, custom), 0.9f);
             Play(m_SoftBellClip, PitchFor(starNumber, custom) * 1.5f, 0.35f);
+        }
+
+        /// <summary>핀치하는 순간의 아주 작은 틱 소리.</summary>
+        public void PlayPinch()
+        {
+            if (m_Config.pinchVolume > 0.001f)
+                Play(m_PinchClip, 1f, m_Config.pinchVolume);
         }
 
         public void PlayUndo()
