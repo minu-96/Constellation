@@ -1,0 +1,16 @@
+{
+  "name": "constellation-relay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Constellation 중계 서버 (Cloudflare Worker)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^5.1.0",
+    "wrangler": "^4.160.0"
+  }
+}
