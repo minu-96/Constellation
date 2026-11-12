@@ -359,10 +359,21 @@ namespace Constellation
         [Tooltip("결과 화면에서 줄어든 배경음 크기")]
         [Range(0f, 1f)] public float ambientDuckedVolume = 0.12f;
         [Range(0f, 1f)] public float effectVolume = 0.7f;
+        [Tooltip("밤의 환경음(풀벌레, 바람, 먼 물소리)을 켠다")]
+        public bool enableNatureAmbience = true;
+        [Tooltip("환경음 전체 크기")]
+        [Range(0f, 1f)] public float natureVolume = 0.6f;
+        [Range(0f, 1f)] public float cricketsVolume = 0.8f;
+        [Range(0f, 1f)] public float windVolume = 0.55f;
+        [Range(0f, 1f)] public float waterVolume = 0.35f;
         [Tooltip("핀치할 때 나는 작은 틱 소리의 크기. 0이면 끈다")]
         [Range(0f, 1f)] public float pinchVolume = 0.3f;
         [Tooltip("비워 두면 코드로 만든 소리를 쓴다. 파일로 바꾸려면 여기에 넣는다")]
         public AudioClip ambientClip;
+        [Tooltip("환경음을 녹음 파일로 바꾸려면 여기에 넣는다(이음매 없이 반복되는 파일)")]
+        public AudioClip cricketsClip;
+        public AudioClip windClip;
+        public AudioClip waterClip;
         public AudioClip starGrabClip;
         public AudioClip lineConnectClip;
         public AudioClip undoClip;

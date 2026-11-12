@@ -111,8 +111,28 @@ namespace Constellation
             if (config.logStateChanges)
                 Debug.Log("[Constellation] " + previous + " → " + next);
             Enter(next);
+            audioManager.SetScene(SceneFor(next));
             if (StateChanged != null)
                 StateChanged(previous, next);
+        }
+
+        // 단계마다 배경음과 환경음의 균형이 달라진다.
+        static AudioScene SceneFor(SessionState state)
+        {
+            switch (state)
+            {
+                case SessionState.KeywordSelect:
+                case SessionState.Drawing:
+                    return AudioScene.Drawing;
+                case SessionState.Capture:
+                case SessionState.AiRequest:
+                    return AudioScene.Waiting;
+                case SessionState.Result:
+                case SessionState.Card:
+                    return AudioScene.Result;
+                default:
+                    return AudioScene.Idle;
+            }
         }
 
         void Enter(SessionState state)
@@ -173,7 +193,6 @@ namespace Constellation
                     // 카드 화면에서 QR이 바로 보이도록 업로드를 미리 시작한다.
                     cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg);
                     audioManager.PlayResult();
-                    audioManager.SetAmbientDucked(true);
                     break;
 
                 case SessionState.Card:
@@ -532,7 +551,6 @@ namespace Constellation
             m_CardReadyTime = -1f;
             resultView.Hide();
             cardService.Clear();
-            audioManager.SetAmbientDucked(false);
             guide.ClearAll();
         }
     }
