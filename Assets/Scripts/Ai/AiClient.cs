@@ -27,6 +27,7 @@ namespace Constellation
             public string keyword;
             public int starCount;
             public string image;
+            public string tone;
         }
 
         [Serializable]
@@ -49,11 +50,12 @@ namespace Constellation
         /// <summary>
         /// 요청을 보낸다. onDone은 성공이든 실패든 정확히 한 번 불린다(Cancel한 경우는 제외).
         /// </summary>
-        public void Request(string keywordId, int starCount, byte[] jpeg, Action<AiResult> onDone)
+        /// <param name="tone">이야기 말투(folk, fairy, poetic). 서버가 프롬프트에 반영한다.</param>
+        public void Request(string keywordId, int starCount, byte[] jpeg, string tone, Action<AiResult> onDone)
         {
             Cancel();
             m_RequestId++;
-            m_Running = StartCoroutine(Run(m_RequestId, keywordId, starCount, jpeg, onDone));
+            m_Running = StartCoroutine(Run(m_RequestId, keywordId, starCount, jpeg, tone, onDone));
         }
 
         /// <summary>진행 중인 요청을 끊는다. 콜백은 불리지 않는다.</summary>
@@ -85,7 +87,7 @@ namespace Constellation
             }
         }
 
-        IEnumerator Run(int id, string keywordId, int starCount, byte[] jpeg, Action<AiResult> onDone)
+        IEnumerator Run(int id, string keywordId, int starCount, byte[] jpeg, string tone, Action<AiResult> onDone)
         {
             AiResult result = new AiResult();
             AppSecrets secrets = AppSecrets.Load();
@@ -102,6 +104,7 @@ namespace Constellation
             {
                 StoryRequest body = new StoryRequest();
                 body.keyword = keywordId;
+                body.tone = string.IsNullOrEmpty(tone) ? "folk" : tone;
                 body.starCount = starCount;
                 body.image = Convert.ToBase64String(jpeg);
                 byte[] payload = Encoding.UTF8.GetBytes(JsonUtility.ToJson(body));

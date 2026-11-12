@@ -18,6 +18,8 @@ Quest 앱과 Claude API 사이에 놓이는 작은 서버입니다. 앱은 별�
 { "keyword": "wish", "starCount": 5, "image": "<base64 JPEG>" }
 ```
 
+`tone`(선택)으로 이야기 말투를 고를 수 있습니다: `folk`(옛이야기, 기본), `fairy`(동화), `poetic`(시). 다른 값은 400입니다.
+
 응답
 
 ```json

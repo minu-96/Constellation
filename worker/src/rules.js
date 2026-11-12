@@ -8,6 +8,17 @@ export const KEYWORDS = Object.freeze({
   loved_one: "소중한 사람을 위한 별자리",
 });
 
+/**
+ * 이야기 말투. 앱이 보내지 않으면 folk(옛이야기)다.
+ * 값마다 (누가 이야기하는지, 어떤 분위기로 쓰는지)를 프롬프트에 넣는다.
+ */
+export const TONES = Object.freeze({
+  folk: { teller: "옛이야기꾼", style: "한국 옛이야기 분위기의 짧은 이야기를 씁니다. '~했대요', '~였답니다'처럼 전해 들은 말투로 맺습니다" },
+  fairy: { teller: "동화 작가", style: "어린이에게 읽어 주는 따뜻한 동화 분위기의 짧은 이야기를 씁니다. '~했어요'처럼 다정한 말투로 맺습니다" },
+  poetic: { teller: "시인", style: "시처럼 고요하고 여운이 남는 짧은 글을 씁니다. 꾸밈말을 아끼고 장면 하나를 그리듯 씁니다. 문장은 마침표로 끝냅니다" },
+});
+export const DEFAULT_TONE = "folk";
+
 export const STAR_COUNT_MIN = 3;
 export const STAR_COUNT_MAX = 8;
 

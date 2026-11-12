@@ -1,5 +1,5 @@
 import {
-  KEYWORDS, STAR_COUNT_MIN, STAR_COUNT_MAX, IMAGE_MAX_BYTES,
+  KEYWORDS, TONES, DEFAULT_TONE, STAR_COUNT_MIN, STAR_COUNT_MAX, IMAGE_MAX_BYTES,
   NAME_MIN_CHARS, NAME_MAX_CHARS, STORY_MIN_CHARS, STORY_MAX_CHARS,
   STORY_MIN_SENTENCES, STORY_MAX_SENTENCES, BANNED_WORDS,
 } from "./rules.js";
@@ -43,6 +43,11 @@ export function validateStoryRequest(body) {
     return fail(400, "invalid_body");
   }
   const { keyword, starCount, image } = body;
+  // 말투는 선택 항목이다. 없으면 옛이야기, 있으면 허용된 값이어야 한다.
+  const tone = body.tone === undefined || body.tone === null ? DEFAULT_TONE : body.tone;
+  if (typeof tone !== "string" || !Object.hasOwn(TONES, tone)) {
+    return fail(400, "invalid_tone");
+  }
   if (typeof keyword !== "string" || !Object.hasOwn(KEYWORDS, keyword)) {
     return fail(400, "invalid_keyword");
   }
@@ -51,7 +56,7 @@ export function validateStoryRequest(body) {
   }
   const img = validateJpegBase64(image);
   if (!img.ok) return img;
-  return { ok: true, value: { keyword, starCount, image } };
+  return { ok: true, value: { keyword, starCount, image, tone } };
 }
 
 /** 글자 수는 코드 포인트 기준으로 센다. */

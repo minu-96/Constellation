@@ -36,6 +36,19 @@ namespace Constellation
         High
     }
 
+    /// <summary>AI가 지어 주는 이야기의 말투.</summary>
+    public enum StoryTone
+    {
+        /// <summary>옛이야기(민담풍). "~했대요"</summary>
+        Folk,
+        /// <summary>동화풍. "~했어요"</summary>
+        FairyTale,
+        /// <summary>시적인 문장</summary>
+        Poetic,
+        /// <summary>체험마다 셋 중 하나를 무작위로</summary>
+        Random
+    }
+
     /// <summary>체험 자세. 잡는 별의 높이와 거리가 달라진다.</summary>
     public enum PlayPosture
     {
@@ -165,6 +178,8 @@ namespace Constellation
         [Header("AI 요청 (확정)")]
         [Tooltip("AI 응답을 기다리는 최대 시간(초)")]
         public float aiTimeoutSeconds = 10f;
+        [Tooltip("AI 이야기의 말투. Random이면 체험마다 달라진다. 폴백 이야기는 항상 옛이야기 말투다")]
+        public StoryTone storyTone = StoryTone.Folk;
         [Tooltip("응답이 빨리 와도 별빛 연출을 보여 주는 최소 시간(초). 기기 테스트 후 조정")]
         public float aiMinWaitSeconds = 3f;
 
@@ -487,6 +502,20 @@ namespace Constellation
                 m_ActiveZone.azimuthHalfRange = Mathf.Clamp(source.azimuthHalfRange, 10f, 90f);
                 m_ActiveZone.distance = Mathf.Clamp(source.distance, 0.2f, 1f);
                 return m_ActiveZone;
+            }
+        }
+
+        /// <summary>이번 체험에 쓸 말투를 서버가 받는 값(folk, fairy, poetic)으로 돌려준다.</summary>
+        public string PickStoryTone()
+        {
+            StoryTone tone = storyTone;
+            if (tone == StoryTone.Random)
+                tone = (StoryTone)UnityEngine.Random.Range(0, 3);
+            switch (tone)
+            {
+                case StoryTone.FairyTale: return "fairy";
+                case StoryTone.Poetic: return "poetic";
+                default: return "folk";
             }
         }
 

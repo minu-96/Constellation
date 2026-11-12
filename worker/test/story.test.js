@@ -7,6 +7,8 @@ describe("요청 검증", () => {
     ["허용되지 않은 키워드", goodBody({ keyword: "love" })],
     ["키워드 누락", goodBody({ keyword: undefined })],
     ["프로토타입 속성 이름을 키워드로 보냄", goodBody({ keyword: "toString" })],
+    ["허용되지 않은 말투", goodBody({ tone: "horror" })],
+    ["말투가 문자열이 아님", goodBody({ tone: 3 })],
     ["별 개수 2개(최소 미만)", goodBody({ starCount: 2 })],
     ["별 개수 9개(최대 초과)", goodBody({ starCount: 9 })],
     ["별 개수가 정수가 아님", goodBody({ starCount: 4.5 })],
@@ -124,6 +126,22 @@ describe("정상 흐름", () => {
     expect(text.text).toContain("모험을 떠나는 별자리");
     expect(text.text).toContain("별 7개");
     expect(text.text).toContain("무섭거나 폭력적인 표현은 쓰지 않습니다");
+  });
+
+  it("말투를 보내지 않으면 옛이야기꾼으로, 보내면 그 말투로 부탁한다", async () => {
+    const t = setup();
+    await t.send(storyRequest(goodBody()));
+    expect(t.create.mock.calls[0][0].messages[0].content[1].text).toContain("옛이야기꾼");
+
+    await t.send(storyRequest(goodBody({ tone: "fairy" })));
+    expect(t.create.mock.calls[1][0].messages[0].content[1].text).toContain("동화 작가");
+
+    await t.send(storyRequest(goodBody({ tone: "poetic" })));
+    const poetic = t.create.mock.calls[2][0].messages[0].content[1].text;
+    expect(poetic).toContain("시인");
+    // 말투가 달라도 안전 문구와 형식 지시는 그대로다.
+    expect(poetic).toContain("무섭거나 폭력적인 표현은 쓰지 않습니다");
+    expect(poetic).toContain('{"name":"","story":""}');
   });
 
   it("모델명 환경 변수가 없으면 claude-haiku-5-5를 쓴다", async () => {
