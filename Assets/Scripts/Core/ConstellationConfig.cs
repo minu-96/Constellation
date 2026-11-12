@@ -287,7 +287,20 @@ namespace Constellation
         public Color lineColor = new Color(1.0f, 0.9f, 0.62f);
         public Color textColor = new Color(0.96f, 0.95f, 1.0f);
         public Color textAccentColor = new Color(1.0f, 0.88f, 0.58f);
-        public Color handColor = new Color(0.6f, 0.78f, 1.0f);
+        [Tooltip("손 색. 별(푸른 흰색)·선(금색)과 헷갈리지 않게 민트 계열로 둔다")]
+        public Color handColor = new Color(0.35f, 1.0f, 0.78f);
+        [Tooltip("엄지 끝 강조색")]
+        public Color thumbTipColor = new Color(1.0f, 0.45f, 0.75f);
+        [Tooltip("검지 끝 강조색")]
+        public Color indexTipColor = new Color(0.55f, 1.0f, 0.45f);
+
+        [Header("손 표시 (기기 테스트 후 조정)")]
+        [Tooltip("손가락 선의 굵기(m)")]
+        public float handFingerWidth = 0.013f;
+        [Tooltip("손바닥 면의 불투명도(0이면 테두리만)")]
+        [Range(0f, 0.6f)] public float handPalmOpacity = 0.14f;
+        [Tooltip("엄지·검지 끝이 핀치 시작 거리에서 이만큼 떨어진 곳부터 빛이 모이기 시작한다(m)")]
+        public float pinchHintRange = 0.06f;
 
         [Header("후처리 (기기 성능 테스트 후 조정)")]
         [Tooltip("URP 후처리(블룸·비네트·색 보정)를 켠다. 품질 단계가 High일 때만 적용된다. Quest에서는 화면 전체를 여러 번 다시 그려 비용이 크므로 기본은 끔")]
@@ -306,11 +319,14 @@ namespace Constellation
         [Tooltip("결과 화면에서 줄어든 배경음 크기")]
         [Range(0f, 1f)] public float ambientDuckedVolume = 0.12f;
         [Range(0f, 1f)] public float effectVolume = 0.7f;
+        [Tooltip("핀치할 때 나는 작은 틱 소리의 크기. 0이면 끈다")]
+        [Range(0f, 1f)] public float pinchVolume = 0.3f;
         [Tooltip("비워 두면 코드로 만든 소리를 쓴다. 파일로 바꾸려면 여기에 넣는다")]
         public AudioClip ambientClip;
         public AudioClip starGrabClip;
         public AudioClip lineConnectClip;
         public AudioClip undoClip;
+        public AudioClip pinchClip;
         public AudioClip keywordSelectClip;
         public AudioClip completeClip;
         public AudioClip resultClip;
