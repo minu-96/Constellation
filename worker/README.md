@@ -162,6 +162,12 @@ npx wrangler secret put APP_SHARED_TOKEN
 npx wrangler secret put GOOGLE_TTS_API_KEY
 ```
 
+운영자 페이지(`/admin`)를 쓰려면 비밀번호를 등록합니다. 로그인하면 별자리 목록이 나오고, 하나씩 삭제하거나 QR을 다시 띄우거나, '전부 삭제'를 입력해 모두 지울 수 있습니다(번호도 1번부터 다시 시작). 비밀번호를 등록하지 않으면 페이지가 열리지 않습니다.
+
+```bash
+npx wrangler secret put ADMIN_PASSWORD
+```
+
 결과 카드(QR)를 쓰려면 KV 네임스페이스를 만듭니다. 출력된 `id`를 `wrangler.toml`의 `[[kv_namespaces]]` 주석 블록에 넣고 주석을 풉니다. 카드가 필요 없으면 건너뜁니다.
 
 ```bash

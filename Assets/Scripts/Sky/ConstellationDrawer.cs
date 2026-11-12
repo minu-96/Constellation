@@ -23,7 +23,13 @@ namespace Constellation
         HandInput m_Hands;
         StarField m_StarField;
         LineRenderer m_Line;
+        // 이미 그은 구간을 다시 지나면 그 구간은 그리지 않는다. 그래서 선이 여러 조각(획)으로 나뉠 수 있다.
+        readonly List<LineRenderer> m_Strokes = new List<LineRenderer>();
+        readonly List<Vector3> m_Points = new List<Vector3>();
+        readonly List<Vector3> m_StrokePoints = new List<Vector3>();
         LineRenderer m_Preview;
+        // 끌고 있는 손이 가리키는 별(손마다). 핀치를 놓을 때 이 별로 잇는다.
+        readonly int[] m_DragTarget = { -1, -1 };
         // 지나간 순서대로의 별 번호. 닫힌 모양을 그릴 수 있게 같은 별이 다시 나올 수 있다.
         readonly List<int> m_Selected = new List<int>();
         int m_Unique;
@@ -61,13 +67,18 @@ namespace Constellation
             Color previewColor = config.lineColor;
             previewColor.a = 0.45f;
             m_Preview = VisualFactory.CreateLine("Preview Line", transform, config.lineWidth * 0.6f, previewColor, true);
+            m_Strokes.Add(m_Line);
             m_Hands.PinchStarted += OnPinchStarted;
+            m_Hands.PinchEnded += OnPinchEnded;
         }
 
         void OnDestroy()
         {
             if (m_Hands != null)
+            {
                 m_Hands.PinchStarted -= OnPinchStarted;
+                m_Hands.PinchEnded -= OnPinchEnded;
+            }
         }
 
         /// <summary>별 잇기를 받기 시작한다.</summary>
@@ -76,6 +87,7 @@ namespace Constellation
             m_Active = true;
             m_MissStreak = 0;
             m_DragArmed[0] = m_DragArmed[1] = false;
+            m_DragTarget[0] = m_DragTarget[1] = -1;
         }
 
         /// <summary>별 잇기를 멈춘다. 그어 둔 선은 남는다.</summary>
@@ -101,8 +113,9 @@ namespace Constellation
             m_Engraved = false;
             m_EngraveLevel = 0f;
             m_ExternalPulse = false;
-            if (m_Line != null)
-                m_Line.positionCount = 0;
+            for (int i = 0; i < m_Strokes.Count; i++)
+                m_Strokes[i].positionCount = 0;
+            m_DragTarget[0] = m_DragTarget[1] = -1;
             if (m_Preview != null)
                 m_Preview.positionCount = 0;
         }
@@ -194,6 +207,24 @@ namespace Constellation
             TrySelectIndex(index, false);
         }
 
+        // 끌던 핀치를 놓았다: 놓은 곳이 별이면 마지막 별에서 그 별로 잇는다. 지나간 별은 잇지 않는다.
+        void OnPinchEnded(HandSide side)
+        {
+            int i = (int)side;
+            int target = m_DragTarget[i];
+            bool armed = m_DragArmed[i];
+            m_DragTarget[i] = -1;
+            m_DragArmed[i] = false;
+            if (!m_Active || !armed || !m_Config.selectWhileDragging || target < 0 || target >= m_StarField.Count)
+                return;
+            if (LeftHandCancels && side == HandSide.Left)
+                return;
+            // 추적이 끊겨서 핀치가 풀린 경우는 놓은 것으로 보지 않는다.
+            if (!m_Hands.Get(side).isTracked)
+                return;
+            TrySelectIndex(target, false);
+        }
+
         /// <summary>지금의 잡기 반경. 연달아 빗나가면 조금씩 넓어지고(잡기 보조), 별을 잡으면 원래대로 돌아간다.</summary>
         public float GrabRadius
         {
@@ -268,39 +299,27 @@ namespace Constellation
             m_StarField.SetHovered(hoverLeft, hoverRight);
             m_StarField.SetHandPoints(left.isTracked && !LeftHandCancels, left.pinchPoint, right.isTracked, right.pinchPoint);
 
-            // 핀치를 유지한 채 다른 별 쪽으로 끌면 그 별에 붙어 이어진다(머리에서 본 방향 기준).
+            // 핀치를 유지한 채 끌면 가리키는 별을 표시만 한다. 실제로 잇는 건 핀치를 놓을 때다.
             if (m_Config.selectWhileDragging)
             {
-                if (left.isTracked && left.isPinching && m_DragArmed[0] && !LeftHandCancels)
-                    DragSelect(left.pinchPoint, ref hoverLeft);
-                if (right.isTracked && right.isPinching && m_DragArmed[1])
-                    DragSelect(right.pinchPoint, ref hoverRight);
+                m_DragTarget[0] = left.isTracked && left.isPinching && m_DragArmed[0] && !LeftHandCancels ? DragTarget(left.pinchPoint) : -1;
+                m_DragTarget[1] = right.isTracked && right.isPinching && m_DragArmed[1] ? DragTarget(right.pinchPoint) : -1;
+                if (m_DragTarget[0] >= 0)
+                    hoverLeft = m_DragTarget[0];
+                if (m_DragTarget[1] >= 0)
+                    hoverRight = m_DragTarget[1];
                 m_StarField.SetHovered(hoverLeft, hoverRight);
             }
-            if (!left.isPinching)
-                m_DragArmed[0] = false;
-            if (!right.isPinching)
-                m_DragArmed[1] = false;
         }
 
-        // 끌고 있는 손이 가리키는 별을 찾아 잇는다. 이미 이은 별도 후보지만 방금 이은 별은 뺀다.
-        void DragSelect(Vector3 handPoint, ref int hover)
+        // 끌고 있는 손이 머리에서 본 방향으로 가리키는 별. 방금 이은 별은 뺀다.
+        int DragTarget(Vector3 handPoint)
         {
             Camera cam = Camera.main;
             if (cam == null)
-                return;
+                return -1;
             int exclude = m_Selected.Count > 0 ? m_Selected[m_Selected.Count - 1] : -1;
-            int index = m_StarField.FindNearestByAngle(handPoint, cam.transform.position, m_Config.dragSnapAngle, m_Config.dragSnapDepthTolerance, false, exclude);
-            hover = index;
-            if (index < 0)
-            {
-                m_DwellIndex = -1;
-                return;
-            }
-            bool already = m_StarField.IsSelected(index);
-            if (!already)
-                m_DwellIndex = -1;
-            TrySelectIndex(index, already);
+            return m_StarField.FindNearestByAngle(handPoint, cam.transform.position, m_Config.dragSnapAngle, m_Config.dragSnapDepthTolerance, false, exclude);
         }
 
         void LateUpdate()
@@ -318,57 +337,127 @@ namespace Constellation
             float scale = m_StarField.CurrentScale;
             int count = m_Selected.Count;
             m_EngraveLevel = Mathf.MoveTowards(m_EngraveLevel, m_Engraved ? 1f : 0f, Time.deltaTime / 0.8f);
-            m_Line.widthMultiplier = m_Config.lineWidth * scale * (1f + 0.25f * m_EngraveLevel);
-            m_Line.positionCount = count >= 2 ? count : 0;
+            int used = 0;
             if (count >= 2)
             {
                 m_Grow = Mathf.MoveTowards(m_Grow, 1f, Time.deltaTime / k_GrowSeconds);
-                float total = 0f;
-                Vector3 previous = Vector3.zero;
-                for (int i = 0; i < count; i++)
-                {
-                    Vector3 position = m_StarField.GetWorldPosition(m_Selected[i]);
-                    // 새로 그은 선은 앞 별에서 자라나듯 그린다.
-                    if (i == count - 1 && m_Grow < 1f)
-                        position = Vector3.Lerp(previous, position, Mathf.SmoothStep(0f, 1f, m_Grow));
-                    m_Line.SetPosition(i, position);
-                    if (i > 0)
-                        total += Vector3.Distance(previous, position);
-                    if (i < m_StarUv.Length)
-                        m_StarUv[i] = total;
-                    previous = position;
-                }
-                UpdateLineLight(count, total, scale);
+                used = BuildStrokes(count, scale);
             }
+            for (int i = used; i < m_Strokes.Count; i++)
+                m_Strokes[i].positionCount = 0;
 
             UpdatePreview(count);
         }
 
-        // 선을 따라 흐르는 빛과, 새 선이 이어질 때 앞 별에서 새 별로 지나가는 빛.
-        void UpdateLineLight(int count, float totalLength, float scale)
+        // 이은 순서대로 점을 놓되, 이미 그은 구간(방향 무관)을 다시 지나는 곳은 건너뛰어 획을 나눈다.
+        // 반환값은 쓴 획의 개수.
+        int BuildStrokes(int count, float scale)
         {
-            Material material = m_Line.sharedMaterial;
-            float inverse = totalLength > 0.0001f ? 1f / totalLength : 0f;
+            m_Points.Clear();
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 position = m_StarField.GetWorldPosition(m_Selected[i]);
+                // 새로 그은 선은 앞 별에서 자라나듯 그린다.
+                if (i == count - 1 && m_Grow < 1f)
+                    position = Vector3.Lerp(m_Points[i - 1], position, Mathf.SmoothStep(0f, 1f, m_Grow));
+                m_Points.Add(position);
+            }
+
+            // 보이는 구간 길이로 각 별의 자리(0~1)를 정한다. 다시 지나는 구간은 길이 0.
+            float total = 0f;
+            if (m_StarUv.Length > 0)
+                m_StarUv[0] = 0f;
+            for (int i = 1; i < count; i++)
+            {
+                if (IsNewSegment(i))
+                    total += Vector3.Distance(m_Points[i - 1], m_Points[i]);
+                if (i < m_StarUv.Length)
+                    m_StarUv[i] = total;
+            }
+            float inverse = total > 0.0001f ? 1f / total : 0f;
             for (int i = 0; i < count && i < m_StarUv.Length; i++)
                 m_StarUv[i] *= inverse;
 
-            material.SetFloat(VisualFactory.IntensityId, 1.4f + 0.9f * m_EngraveLevel);
-            if (!m_Config.enableLineFlow)
+            bool lastGrowing = m_Grow < 1f && IsNewSegment(count - 1);
+            int strokeCount = 0;
+            float covered = 0f;
+            int s = 1;
+            while (s < count)
             {
-                material.SetFloat(VisualFactory.FlowStrengthId, 0f);
-                material.SetFloat(VisualFactory.PulseStrengthId, m_ExternalPulse ? m_ExternalPulseStrength : 0f);
-                material.SetFloat(VisualFactory.PulsePositionId, m_ExternalPulsePosition);
-                return;
+                if (!IsNewSegment(s))
+                {
+                    s++;
+                    continue;
+                }
+                // s부터 이어지는 새 구간들을 한 획으로 모은다.
+                m_StrokePoints.Clear();
+                m_StrokePoints.Add(m_Points[s - 1]);
+                float length = 0f;
+                int e = s;
+                while (e < count && IsNewSegment(e))
+                {
+                    m_StrokePoints.Add(m_Points[e]);
+                    length += Vector3.Distance(m_Points[e - 1], m_Points[e]);
+                    e++;
+                }
+                LineRenderer line = GetStroke(strokeCount);
+                line.widthMultiplier = m_Config.lineWidth * scale * (1f + 0.25f * m_EngraveLevel);
+                line.positionCount = m_StrokePoints.Count;
+                for (int k = 0; k < m_StrokePoints.Count; k++)
+                    line.SetPosition(k, m_StrokePoints[k]);
+                bool endsAtLast = e == count;
+                ApplyStrokeLight(line, covered * inverse, (covered + length) * inverse, length, scale, endsAtLast && lastGrowing);
+                covered += length;
+                strokeCount++;
+                s = e;
             }
+            return strokeCount;
+        }
 
-            // 빛 띠 사이의 간격이 선 길이와 상관없이 약 12cm가 되게 한다(별자리가 커지면 함께 늘어난다).
-            float bandLength = 0.12f * Mathf.Max(0.01f, scale);
-            material.SetFloat(VisualFactory.FlowDensityId, Mathf.Clamp(totalLength / bandLength, 1f, 64f));
-            material.SetFloat(VisualFactory.FlowStrengthId, m_Config.lineFlowStrength);
+        // i번째 구간(별 i-1 → 별 i)이 앞에서 그은 적 없는 구간인지
+        bool IsNewSegment(int i)
+        {
+            int a = m_Selected[i - 1];
+            int b = m_Selected[i];
+            for (int j = 1; j < i; j++)
+            {
+                int c = m_Selected[j - 1];
+                int d = m_Selected[j];
+                if ((c == a && d == b) || (c == b && d == a))
+                    return false;
+            }
+            return true;
+        }
 
-            float pulsePosition = m_ExternalPulsePosition;
-            float pulseStrength = m_ExternalPulse ? m_ExternalPulseStrength : 0f;
-            if (!m_ExternalPulse && m_Grow < 1f && count - 2 < m_StarUv.Length)
+        LineRenderer GetStroke(int index)
+        {
+            while (m_Strokes.Count <= index)
+            {
+                LineRenderer line = VisualFactory.CreateLine("Constellation Line " + m_Strokes.Count, transform, m_Config.lineWidth, m_Config.lineColor, true);
+                m_Strokes.Add(line);
+            }
+            return m_Strokes[index];
+        }
+
+        // 선을 따라 흐르는 빛과 빛 덩어리. 빛 덩어리 자리는 전체 선 기준(0~1)이라 획마다 제 구간으로 바꿔 준다.
+        void ApplyStrokeLight(LineRenderer line, float from, float to, float length, float scale, bool growing)
+        {
+            Material material = line.sharedMaterial;
+            material.SetFloat(VisualFactory.IntensityId, 1.4f + 0.9f * m_EngraveLevel);
+
+            float span = Mathf.Max(0.0001f, to - from);
+            float pulsePosition = 0f;
+            float pulseStrength = 0f;
+            if (m_ExternalPulse)
+            {
+                float local = (m_ExternalPulsePosition - from) / span;
+                if (local >= -0.02f && local <= 1.02f)
+                {
+                    pulsePosition = Mathf.Clamp01(local);
+                    pulseStrength = m_ExternalPulseStrength;
+                }
+            }
+            else if (growing && m_Config.enableLineFlow)
             {
                 // 자라나는 선의 끝에 빛을 얹는다.
                 pulsePosition = 1f;
@@ -376,7 +465,18 @@ namespace Constellation
             }
             material.SetFloat(VisualFactory.PulsePositionId, pulsePosition);
             material.SetFloat(VisualFactory.PulseStrengthId, pulseStrength);
+
+            if (!m_Config.enableLineFlow)
+            {
+                material.SetFloat(VisualFactory.FlowStrengthId, 0f);
+                return;
+            }
+            // 빛 띠 사이의 간격이 선 길이와 상관없이 약 12cm가 되게 한다(별자리가 커지면 함께 늘어난다).
+            float bandLength = 0.12f * Mathf.Max(0.01f, scale);
+            material.SetFloat(VisualFactory.FlowDensityId, Mathf.Clamp(length / bandLength, 1f, 64f));
+            material.SetFloat(VisualFactory.FlowStrengthId, m_Config.lineFlowStrength);
             // 빛 덩어리의 길이는 약 6cm
+            float inverse = length > 0.0001f ? 1f / length : 0f;
             material.SetFloat(VisualFactory.PulseWidthId, Mathf.Clamp(0.06f * scale * inverse, 0.01f, 0.5f));
         }
 

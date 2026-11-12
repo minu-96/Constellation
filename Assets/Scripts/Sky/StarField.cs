@@ -121,13 +121,32 @@ namespace Constellation
                 float stagger = (row % 2 == 0 ? -0.25f : 0.25f) * cellWidth;
                 for (int column = 0; column < inRow; column++)
                 {
-                    float azimuth = rowStart + (column + 0.5f) * cellWidth + stagger + Random.Range(-0.5f, 0.5f) * jitter * cellWidth;
-                    float elevation = zone.elevationMin + (row + 0.5f) * cellHeight + Random.Range(-0.5f, 0.5f) * jitter * cellHeight;
-                    azimuth = Mathf.Clamp(azimuth, -zone.azimuthHalfRange, zone.azimuthHalfRange);
-                    elevation = Mathf.Clamp(elevation, zone.elevationMin, zone.elevationMax);
-                    m_Directions.Add(Quaternion.Euler(-elevation, azimuth, 0f) * Vector3.forward);
+                    // 흔든 자리가 이미 놓은 별과 너무 가까우면 몇 번 다시 흔들고, 그래도 안 되면 칸 가운데에 둔다.
+                    Vector3 direction = Vector3.forward;
+                    bool placed = false;
+                    for (int attempt = 0; attempt < 8 && !placed; attempt++)
+                    {
+                        float shake = attempt < 7 ? jitter : 0f;
+                        float azimuth = rowStart + (column + 0.5f) * cellWidth + stagger + Random.Range(-0.5f, 0.5f) * shake * cellWidth;
+                        float elevation = zone.elevationMin + (row + 0.5f) * cellHeight + Random.Range(-0.5f, 0.5f) * shake * cellHeight;
+                        azimuth = Mathf.Clamp(azimuth, -zone.azimuthHalfRange, zone.azimuthHalfRange);
+                        elevation = Mathf.Clamp(elevation, zone.elevationMin, zone.elevationMax);
+                        direction = Quaternion.Euler(-elevation, azimuth, 0f) * Vector3.forward;
+                        placed = FarFromOthers(direction, m_Config.starMinSeparation);
+                    }
+                    m_Directions.Add(direction);
                 }
             }
+        }
+
+        bool FarFromOthers(Vector3 direction, float minAngle)
+        {
+            for (int i = 0; i < m_Directions.Count; i++)
+            {
+                if (Vector3.Angle(direction, m_Directions[i]) < minAngle)
+                    return false;
+            }
+            return true;
         }
 
         public void Clear()

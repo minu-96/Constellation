@@ -10,7 +10,7 @@ import { encodeQr, qrSvg } from "./qr.js";
 import { json } from "./http.js";
 import { KEYWORDS } from "./rules.js";
 
-const SKY_KEY = "sky:index";
+export const SKY_KEY = "sky:index";
 /** 목록에 남겨 두는 최근 별자리 수. 번호(count)는 계속 올라간다. */
 export const SKY_MAX_ITEMS = 80;
 export const POINTS_MIN = 2;
@@ -37,7 +37,7 @@ export function normalizePoints(points) {
   return result;
 }
 
-async function readIndex(env) {
+export async function readIndex(env) {
   try {
     const index = JSON.parse((await env.CARDS.get(SKY_KEY)) ?? "null");
     if (index && Number.isInteger(index.count) && Array.isArray(index.items)) return index;
@@ -103,6 +103,14 @@ ${cells}
 </body>
 </html>`;
   return html(200, body, "no-store");
+}
+
+export function shapeSvg(item) {
+  const points = normalizePoints(item.points) ?? [];
+  const at = ([x, y]) => `${(8 + x * 84).toFixed(1)},${(8 + (1 - y) * 84).toFixed(1)}`;
+  const line = points.map(at).join(" ");
+  const stars = points.map((p) => { const [cx, cy] = at(p).split(","); return `<circle cx="${cx}" cy="${cy}" r="2.2"/>`; }).join("");
+  return `<svg viewBox="0 0 100 100" role="img"><polyline points="${line}"/>${stars}</svg>`;
 }
 
 function wallCell(item, newest, origin) {

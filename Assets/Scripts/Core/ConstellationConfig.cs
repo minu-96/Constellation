@@ -177,7 +177,7 @@ namespace Constellation
 
         [Header("별 (확정)")]
         [Tooltip("하늘에 뿌리는 후보 별 개수")]
-        public int candidateStarCount = 60;
+        public int candidateStarCount = 42;
         [Tooltip("완성에 필요한 최소 별 개수")]
         public int minStars = 3;
         [Tooltip("이을 수 있는 최대 별 개수")]
@@ -222,7 +222,7 @@ namespace Constellation
         [Header("별 잡기 (기기 테스트 후 조정)")]
         [Tooltip("핀치 위치에서 이 거리 안의 별을 잡는다(m)")]
         public float starGrabRadius = 0.05f;
-        [Tooltip("핀치를 유지한 채 지나가는 별도 잇는다")]
+        [Tooltip("핀치한 채 끌어서 놓은 별로 잇는다(지나가는 별은 잇지 않는다)")]
         public bool selectWhileDragging = true;
         [Tooltip("끌어서 이을 때의 잡기 반경 비율(실수로 잡히는 것을 줄인다)")]
         [Range(0.2f, 1f)] public float dragGrabRadiusScale = 0.6f;
@@ -318,9 +318,11 @@ namespace Constellation
         [Tooltip("능선과 잡는 별 사이에 두는 여유(도)")]
         public float starRidgeMargin = 2f;
         [Tooltip("별을 놓는 줄 수. 한 줄의 칸 수는 후보 별 개수에서 정해진다")]
-        [Range(1, 6)] public int starRows = 4;
+        [Range(1, 6)] public int starRows = 3;
+        [Tooltip("별과 별 사이의 최소 각도(도). 너무 붙어서 한 번에 여러 개가 잡히지 않게 한다")]
+        [Range(0f, 20f)] public float starMinSeparation = 9f;
         [Tooltip("칸 안에서 별을 흔드는 정도(0이면 반듯한 격자, 클수록 불규칙). 크면 별끼리 가까워진다")]
-        [Range(0f, 0.8f)] public float starJitter = 0.35f;
+        [Range(0f, 0.8f)] public float starJitter = 0.3f;
         [Tooltip("손이 이 거리 안으로 오면 별이 조금씩 커지기 시작한다(잡기 반경 바깥으로 더한 거리, m)")]
         public float starHintRange = 0.1f;
         [Tooltip("별 크기 범위(m)")]

@@ -7,6 +7,7 @@ import { createAnthropicClient, requestStoryText, parseModelJson, toPositiveInt 
 import { checkToken, deviceKey, json, readJsonBody } from "./http.js";
 import { handleSkyList, handleWall } from "./sky.js";
 import { handleTts } from "./tts.js";
+import { handleAdmin } from "./admin.js";
 import { createRateLimiter } from "./rateLimit.js";
 import { validateStory, validateStoryRequest } from "./validate.js";
 
@@ -63,6 +64,9 @@ export function createHandler(deps = {}) {
       if (pathname === "/" || pathname === "/story") {
         if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
         return handleStory(request, env);
+      }
+      if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+        return handleAdmin(request, env, pathname, { rateLimiter, now });
       }
       if (pathname === "/tts") {
         if (request.method !== "POST") return json(405, { error: "method_not_allowed" });

@@ -74,5 +74,8 @@ export function fakeKv() {
     async get(key) {
       return store.has(key) ? store.get(key) : null;
     },
+    async delete(key) {
+      store.delete(key);
+    },
   };
 }

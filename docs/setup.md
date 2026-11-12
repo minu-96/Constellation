@@ -99,6 +99,8 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 양손 모으기 | `handsTogetherDistance` / `handsTogetherReleaseDistance` | 0.11 / 0.2 m |
 | 양손 모으기 | `handsTogetherHoldSeconds` | 0.7초 |
 | 되돌리기 | `undoGesture` | LeftPinch: 오른손으로 잇고, 왼손을 살짝 집었다 놓으면 마지막 선 취소, `clearHoldSeconds`(1.2초) 넘게 쥐면 전부 지움 (다른 선택지: PalmSwipe, MiddlePinch) |
+| 별 잇기 | `selectWhileDragging` | 켬: 핀치한 채 끌어서 놓은 별로 잇는다. 지나가는 별은 잇지 않는다. 이미 그은 구간을 다시 지나도 선은 하나만 보인다 |
+| 별 간격 | `candidateStarCount` / `starRows` / `starMinSeparation` | 42개 / 3줄 / 9도 |
 | 다시 만들기 | `enableRedoChoice` / `maxRedoCount` / `choiceTimeoutSeconds` | 켬 / 2회 / 20초: 결과 화면에서 '남기기'를 골라야 카드·모두의 하늘에 올라간다. '다시 만들기'는 올리지 않고 같은 키워드로 새 별을 뿌린다. 고르지 않으면 20초 뒤 '남기기' |
 | 되돌리기 | `undoSwipeSpeed` / `undoSwipeDistance` | 1.0 m/s / 0.22 m |
 | 손 인식 | `handCheckHoldSeconds` / `handLostGuideDelay` | 0.4 / 1.0초 |
