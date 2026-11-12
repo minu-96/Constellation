@@ -154,7 +154,7 @@ namespace Constellation
                     guide.SetHint(config.msgAiWaiting);
                     m_AiDone = false;
                     starField.SetCandidatesVisible(false);
-                    gatherEffect.Play(starField.GetSelectionCenter(drawer.SelectedIndices), config.starDistance * 0.9f);
+                    gatherEffect.Play(starField.GetSelectionCenter(drawer.SelectedIndices), config.ActiveStarZone.distance * 0.9f);
                     aiClient.Request(m_Keyword.id, m_StarCount, m_CaptureJpeg, OnAiResult);
                     break;
 

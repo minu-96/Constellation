@@ -25,6 +25,39 @@ namespace Constellation
         MiddlePinch
     }
 
+    /// <summary>품질 단계. 기기에서 프레임이 떨어지면 낮춘다.</summary>
+    public enum QualityTier
+    {
+        /// <summary>가장 가볍다. 먼지 입자와 후처리를 끈다.</summary>
+        Low,
+        /// <summary>기본. 추가 화면 패스 없이 셰이더만으로 그린다.</summary>
+        Medium,
+        /// <summary>URP 후처리(Bloom 등)를 허용한다. 기기에서 72fps를 확인한 뒤에만 쓴다.</summary>
+        High
+    }
+
+    /// <summary>체험 자세. 잡는 별의 높이와 거리가 달라진다.</summary>
+    public enum PlayPosture
+    {
+        Standing,
+        Seated,
+        Custom
+    }
+
+    /// <summary>잡는 별을 놓는 구역. 각도는 체험 시작 때의 눈높이와 정면을 기준으로 한다.</summary>
+    [Serializable]
+    public class StarZonePreset
+    {
+        [Tooltip("아래쪽 한계(도). 눈높이가 0, 위가 +")]
+        public float elevationMin = 10f;
+        [Tooltip("위쪽 한계(도). 45도를 넘으면 45도로 자른다")]
+        public float elevationMax = 35f;
+        [Tooltip("좌우로 퍼지는 각도의 절반(도)")]
+        public float azimuthHalfRange = 55f;
+        [Tooltip("눈에서 별까지의 거리(m). 손이 닿아야 한다")]
+        public float distance = 0.45f;
+    }
+
     /// <summary>
     /// 모든 수치와 문구를 모아 둔 설정 파일(docs/spec.md "설정값").
     /// Assets/Resources/ConstellationConfig.asset 을 인스펙터에서 고치면 된다.
@@ -50,6 +83,12 @@ namespace Constellation
             }
             return s_Instance;
         }
+
+        // ------------------------------------------------------------------ 품질
+
+        [Header("품질 (기기 성능 테스트 후 조정)")]
+        [Tooltip("Low: 가장 가벼움 / Medium: 기본 / High: URP 후처리 허용")]
+        public QualityTier qualityTier = QualityTier.Medium;
 
         // ------------------------------------------------------------------ 확정값
 
@@ -97,7 +136,7 @@ namespace Constellation
 
         [Header("별 잡기 (기기 테스트 후 조정)")]
         [Tooltip("핀치 위치에서 이 거리 안의 별을 잡는다(m)")]
-        public float starGrabRadius = 0.06f;
+        public float starGrabRadius = 0.05f;
         [Tooltip("핀치를 유지한 채 지나가는 별도 잇는다")]
         public bool selectWhileDragging = true;
         [Tooltip("끌어서 이을 때의 잡기 반경 비율(실수로 잡히는 것을 줄인다)")]
@@ -154,19 +193,25 @@ namespace Constellation
 
         // ------------------------------------------------------------------ 배치 (기기 테스트 후 조정)
 
-        [Header("별 배치 (기기 테스트 후 조정)")]
-        [Tooltip("머리(어깨)에서 별까지의 거리(m). 손이 닿아야 한다")]
-        public float starDistance = 0.5f;
-        [Tooltip("별 배치 중심을 머리보다 얼마나 낮출지(m). 어깨 높이에 맞춘다")]
-        public float starCenterDrop = 0.12f;
-        [Tooltip("좌우로 퍼지는 각도의 절반(도)")]
-        public float starAzimuthHalfRange = 50f;
-        [Tooltip("아래쪽 한계 각도(도)")]
-        public float starElevationMin = -20f;
-        [Tooltip("위쪽 한계 각도(도)")]
-        public float starElevationMax = 32f;
-        [Tooltip("별끼리 최소 각거리(도). 겹치지 않게 한다")]
-        public float starMinSeparation = 9f;
+        [Header("별 구역 (기기 테스트 후 조정)")]
+        [Tooltip("체험 자세. Standing/Seated는 아래 프리셋을, Custom은 customZone을 쓴다")]
+        public PlayPosture posture = PlayPosture.Standing;
+        [Tooltip("서서 하는 경우")]
+        public StarZonePreset standingZone = new StarZonePreset { elevationMin = 10f, elevationMax = 35f, azimuthHalfRange = 55f, distance = 0.45f };
+        [Tooltip("앉아서 하는 경우. 덜 뻗고 덜 올려도 닿게 한다")]
+        public StarZonePreset seatedZone = new StarZonePreset { elevationMin = 10f, elevationMax = 32f, azimuthHalfRange = 55f, distance = 0.40f };
+        [Tooltip("직접 정하는 경우")]
+        public StarZonePreset customZone = new StarZonePreset();
+        [Tooltip("능선(산 실루엣)의 최고 높이(도). 잡는 별은 이보다 위에만 놓는다")]
+        public float ridgeMaxElevation = 8f;
+        [Tooltip("능선과 잡는 별 사이에 두는 여유(도)")]
+        public float starRidgeMargin = 2f;
+        [Tooltip("별을 놓는 줄 수. 한 줄의 칸 수는 후보 별 개수에서 정해진다")]
+        [Range(1, 6)] public int starRows = 3;
+        [Tooltip("칸 안에서 별을 흔드는 정도(0이면 반듯한 격자, 클수록 불규칙). 크면 별끼리 가까워진다")]
+        [Range(0f, 0.8f)] public float starJitter = 0.35f;
+        [Tooltip("손이 이 거리 안으로 오면 별이 조금씩 커지기 시작한다(잡기 반경 바깥으로 더한 거리, m)")]
+        public float starHintRange = 0.1f;
         [Tooltip("별 크기 범위(m)")]
         public Vector2 starSizeRange = new Vector2(0.028f, 0.05f);
         [Tooltip("이은 선의 굵기(m)")]
@@ -202,8 +247,8 @@ namespace Constellation
         [Tooltip("이야기 글상자 너비(m)")]
         public float resultStoryWidth = 2.1f;
         [Tooltip("결과 화면에서 별자리를 하늘로 올리는 각도(도)")]
-        public float resultSkyPitch = 30f;
-        [Tooltip("결과 화면에서 별자리를 멀리 보내는 배율(거리 = starDistance × 배율)")]
+        public float resultSkyPitch = 5f;
+        [Tooltip("결과 화면에서 별자리를 멀리 보내는 배율(거리 = 별 구역 거리 × 배율)")]
         public float resultSkyScale = 5f;
         [Tooltip("카드 미리보기까지의 거리(m)")]
         public float cardDistance = 1.3f;
@@ -245,12 +290,12 @@ namespace Constellation
         public Color handColor = new Color(0.6f, 0.78f, 1.0f);
 
         [Header("후처리 (기기 성능 테스트 후 조정)")]
-        [Tooltip("블룸·비네트·색 보정을 켠다. Quest에서 프레임이 떨어지면 끈다")]
-        public bool usePostProcessing = true;
+        [Tooltip("URP 후처리(블룸·비네트·색 보정)를 켠다. 품질 단계가 High일 때만 적용된다. Quest에서는 화면 전체를 여러 번 다시 그려 비용이 크므로 기본은 끔")]
+        public bool usePostProcessing = false;
         public float bloomIntensity = 0.9f;
         public float bloomThreshold = 0.8f;
         public float vignetteIntensity = 0.28f;
-        [Tooltip("하늘에 떠다니는 먼지 별빛 입자 수. 0이면 끈다")]
+        [Tooltip("하늘에 떠다니는 먼지 별빛 입자 수. 0이면 끈다. 품질 단계가 Low면 꺼진다")]
         public int ambientParticleCount = 120;
 
         // ------------------------------------------------------------------ 사운드
@@ -277,6 +322,34 @@ namespace Constellation
         public bool editorSimulation = true;
         [Tooltip("상태 전환을 콘솔에 남긴다")]
         public bool logStateChanges = true;
+
+        /// <summary>잡는 별의 고도 상한. 고개를 크게 젖히지 않게 이보다 위에는 두지 않는다.</summary>
+        public const float StarElevationHardMax = 45f;
+
+        readonly StarZonePreset m_ActiveZone = new StarZonePreset();
+
+        /// <summary>
+        /// 지금 자세에 맞는 별 구역. 상한은 45도로 자르고, 하한은 능선 위로 올린다.
+        /// </summary>
+        public StarZonePreset ActiveStarZone
+        {
+            get
+            {
+                StarZonePreset source = posture == PlayPosture.Seated ? seatedZone : posture == PlayPosture.Custom ? customZone : standingZone;
+                if (source == null)
+                    source = m_ActiveZone;
+                float max = Mathf.Min(source.elevationMax, StarElevationHardMax);
+                float min = Mathf.Max(source.elevationMin, ridgeMaxElevation + starRidgeMargin);
+                // 구역이 너무 얇아지지 않게 최소 8도의 높이를 남긴다.
+                if (min > max - 8f)
+                    min = max - 8f;
+                m_ActiveZone.elevationMin = min;
+                m_ActiveZone.elevationMax = max;
+                m_ActiveZone.azimuthHalfRange = Mathf.Clamp(source.azimuthHalfRange, 10f, 90f);
+                m_ActiveZone.distance = Mathf.Clamp(source.distance, 0.2f, 1f);
+                return m_ActiveZone;
+            }
+        }
 
         public KeywordDefinition FindKeyword(string id)
         {
