@@ -182,6 +182,26 @@ namespace Constellation
         [Tooltip("키워드 아이콘 잡기 반경(m)")]
         public float keywordGrabRadius = 0.09f;
 
+        [Header("처음 쓰는 사람 돕기 (기기 테스트 후 조정)")]
+        [Tooltip("한동안 입력이 없으면 시범 손이 나타나 핀치와 양손 모으기를 보여 준다")]
+        public bool enableGestureGuide = true;
+        [Tooltip("이 시간 동안 아무것도 집지 않으면 핀치 시범을 보여 준다(초)")]
+        public float pinchGuideDelaySeconds = 5f;
+        [Tooltip("별을 충분히 이은 뒤 이 시간 동안 완성하지 않으면 양손 모으기 시범을 보여 준다(초)")]
+        public float finishGuideDelaySeconds = 8f;
+        [Tooltip("연달아 이 횟수만큼 빗나가면 힌트 문구를 띄운다")]
+        public int missHintCount = 2;
+        [Tooltip("빗나갈 때마다 잡기 반경을 이 비율만큼 넓혀 준다(최대 3번, 별을 잡으면 원래대로). 0이면 끈다")]
+        [Range(0f, 0.5f)] public float grabAssistPerMiss = 0.2f;
+        [Tooltip("별을 충분히 이으면 '완성' 별을 띄운다. 집으면 양손 모으기 없이 완성된다(한 손 사용, 양손 인식 실패 대비)")]
+        public bool enableFinishButton = true;
+        [Tooltip("'완성' 별을 별 구역 아래로 얼마나 내려 둘지(도)")]
+        public float finishButtonDrop = 9f;
+        [Tooltip("'완성' 별의 잡기 반경(m)")]
+        public float finishButtonRadius = 0.06f;
+        [Tooltip("시범 손의 색")]
+        public Color guideHandColor = new Color(0.85f, 0.85f, 1.0f);
+
         [Header("양손 모으기 (기기 테스트 후 조정)")]
         [Tooltip("두 손바닥 거리가 이보다 가까우면 모은 것으로 본다(m)")]
         public float handsTogetherDistance = 0.11f;
@@ -301,7 +321,11 @@ namespace Constellation
         public string msgKeywordQuestion = "어떤 별자리를 만들까요?";
         public string msgKeywordHint = "엄지와 검지로 하나를 집어 보세요";
         public string msgDrawingHint = "엄지와 검지로 별을 집어 이어 보세요";
-        public string msgDrawingHintCanFinish = "두 손을 모으면 별자리가 완성돼요";
+        public string msgDrawingHintCanFinish = "두 손을 모으거나 아래의 '완성' 별을 집으면 완성돼요";
+        [Tooltip("'완성' 별을 껐을 때 쓰는 문구")]
+        public string msgDrawingHintHandsOnly = "두 손을 모으면 별자리가 완성돼요";
+        public string msgMissHint = "별에 손끝을 더 가까이 대고 집어 보세요";
+        public string msgFinishLabel = "완성";
         public string msgNeedMoreStars = "별을 더 이어주세요";
         [Tooltip("{0} 자리에 최대 별 개수가 들어간다")]
         public string msgTooManyStars = "별은 {0}개까지 이을 수 있어요. 두 손을 모아 완성해 보세요";

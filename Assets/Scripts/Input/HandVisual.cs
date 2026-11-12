@@ -46,11 +46,15 @@ namespace Constellation
             public bool wasPinching;
             public float flashTime = 10f;
             public Vector3 flashPosition;
+            public Color color;
         }
 
         ConstellationConfig m_Config;
         HandInput m_Hands;
         readonly Hand[] m_Visuals = new Hand[2];
+        // 시범 손(GestureGuide가 쓴다). 실제 손과 같은 방식으로 그리되 색이 다르다.
+        readonly System.Collections.Generic.List<Hand> m_Ghosts = new System.Collections.Generic.List<Hand>();
+        readonly System.Collections.Generic.List<HandState> m_GhostStates = new System.Collections.Generic.List<HandState>();
 
         const float k_FlashSeconds = 0.3f;
 
@@ -59,17 +63,28 @@ namespace Constellation
             m_Config = config;
             m_Hands = hands;
             for (int h = 0; h < 2; h++)
-                m_Visuals[h] = BuildHand(h == 0 ? "Left Hand" : "Right Hand");
+                m_Visuals[h] = BuildHand(h == 0 ? "Left Hand" : "Right Hand", m_Config.handColor, 1f);
         }
 
-        Hand BuildHand(string handName)
+        /// <summary>
+        /// 시범 손을 하나 만든다. 돌려받은 상태 객체를 채우면 그 모양대로 그려진다(isTracked가 false면 숨는다).
+        /// </summary>
+        public HandState CreateGhost(string ghostName)
+        {
+            HandState state = new HandState();
+            m_Ghosts.Add(BuildHand(ghostName, m_Config.guideHandColor, 0.7f));
+            m_GhostStates.Add(state);
+            return state;
+        }
+
+        Hand BuildHand(string handName, Color color, float brightness)
         {
             Transform root = new GameObject(handName).transform;
             root.SetParent(transform, false);
 
             Hand hand = new Hand();
             float width = m_Config.handFingerWidth;
-            Color color = m_Config.handColor;
+            hand.color = color;
 
             hand.fingers = new LineRenderer[k_Fingers.Length];
             for (int f = 0; f < k_Fingers.Length; f++)
@@ -77,7 +92,7 @@ namespace Constellation
                 LineRenderer line = VisualFactory.CreateLine("Finger " + f, root, width, color, true);
                 // 뿌리는 굵고 끝은 가늘게
                 line.widthCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(1f, 0.6f));
-                line.sharedMaterial.SetFloat(VisualFactory.IntensityId, 0.75f);
+                line.sharedMaterial.SetFloat(VisualFactory.IntensityId, 0.75f * brightness);
                 line.positionCount = k_Fingers[f].Length;
                 line.enabled = false;
                 hand.fingers[f] = line;
@@ -85,7 +100,7 @@ namespace Constellation
 
             hand.outline = VisualFactory.CreateLine("Palm Outline", root, width * 0.45f, color, true);
             hand.outline.loop = true;
-            hand.outline.sharedMaterial.SetFloat(VisualFactory.IntensityId, 0.6f);
+            hand.outline.sharedMaterial.SetFloat(VisualFactory.IntensityId, 0.6f * brightness);
             hand.outline.positionCount = k_PalmOutline.Length;
             hand.outline.enabled = false;
 
@@ -140,6 +155,8 @@ namespace Constellation
                 return;
             UpdateHand(m_Visuals[0], m_Hands.Left);
             UpdateHand(m_Visuals[1], m_Hands.Right);
+            for (int i = 0; i < m_Ghosts.Count; i++)
+                UpdateHand(m_Ghosts[i], m_GhostStates[i]);
         }
 
         void UpdateHand(Hand hand, HandState state)
@@ -221,7 +238,7 @@ namespace Constellation
             hand.indexTip.SetIntensity(Mathf.Lerp(1.1f, 2f, near));
 
             // 두 끝 사이로 빛이 모인다.
-            Color beamColor = Color.Lerp(m_Config.handColor, Color.white, near);
+            Color beamColor = Color.Lerp(hand.color, Color.white, near);
             hand.beam.SetPosition(0, thumb);
             hand.beam.SetPosition(1, index);
             hand.beam.widthMultiplier = Mathf.Lerp(0.002f, 0.007f, near);
@@ -264,6 +281,8 @@ namespace Constellation
                 if (m_Visuals[h] != null)
                     VisualFactory.DestroyObject(m_Visuals[h].palmMesh);
             }
+            for (int i = 0; i < m_Ghosts.Count; i++)
+                VisualFactory.DestroyObject(m_Ghosts[i].palmMesh);
         }
     }
 }
