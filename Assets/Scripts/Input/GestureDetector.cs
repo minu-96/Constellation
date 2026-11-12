@@ -1,6 +1,9 @@
+#if UNITY_EDITOR || UNITY_STANDALONE
+#define CONSTELLATION_PC_SIM
+#endif
 using System;
 using UnityEngine;
-#if UNITY_EDITOR
+#if CONSTELLATION_PC_SIM
 using UnityEngine.InputSystem;
 #endif
 
@@ -67,7 +70,7 @@ namespace Constellation
                 UpdateSwipe(HandSide.Right);
             }
 
-#if UNITY_EDITOR
+#if CONSTELLATION_PC_SIM
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null && keyboard.zKey.wasPressedThisFrame)
                 FireUndo();

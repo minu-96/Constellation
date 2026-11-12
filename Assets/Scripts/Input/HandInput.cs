@@ -1,8 +1,11 @@
+#if UNITY_EDITOR || UNITY_STANDALONE
+#define CONSTELLATION_PC_SIM
+#endif
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.Hands;
-#if UNITY_EDITOR
+#if CONSTELLATION_PC_SIM
 using UnityEngine.InputSystem;
 #endif
 
@@ -86,7 +89,7 @@ namespace Constellation
             m_Config = config;
             m_Origin = trackingOrigin;
             m_Camera = headCamera;
-#if UNITY_EDITOR
+#if CONSTELLATION_PC_SIM
             // 시뮬레이션 손은 잡는 별이 놓인 거리에서 시작한다.
             m_SimDepth = config.ActiveStarZone.distance;
 #endif
@@ -113,8 +116,12 @@ namespace Constellation
 
             bool simulated = false;
 #if UNITY_EDITOR
-            // 에디터에서는 H로 켠 시뮬레이션 손이 있으면 OpenXR 런타임보다 우선한다.
+            // 에디터에서는 시뮬레이션 손이 있으면 OpenXR 런타임보다 우선한다.
             simulated = m_Config.editorSimulation && SimulateHands();
+#elif CONSTELLATION_PC_SIM
+            // PC 빌드에서는 헤드셋 손 추적이 없을 때만 마우스 시뮬레이션을 쓴다(Link로 연결했으면 진짜 손이 우선).
+            if (m_Config.editorSimulation && !(m_Subsystem != null && m_Subsystem.running))
+                simulated = SimulateHands();
 #endif
             bool hasRealHands = !simulated && m_Subsystem != null && m_Subsystem.running;
             if (simulated)
@@ -305,9 +312,9 @@ namespace Constellation
             return distance < m_Config.pinchStartDistance;
         }
 
-#if UNITY_EDITOR
-        // ---------------------------------------------------------------- 에디터 시뮬레이션
-        // 헤드셋 없이 흐름을 확인하기 위한 것. 빌드에는 들어가지 않는다.
+#if CONSTELLATION_PC_SIM
+        // ---------------------------------------------------------------- 시뮬레이션(에디터, PC 빌드)
+        // 헤드셋 없이 흐름을 확인하기 위한 것. Quest(안드로이드) 빌드에는 들어가지 않는다.
         //   마우스 이동: 오른손 위치      마우스 왼쪽 버튼: 핀치
         //   휠: 손까지의 거리            H: 손 숨기기/보이기(기본은 보임)
         //   화살표 키 또는 마우스 가운데 버튼 드래그: 둘러보기(헤드셋이 없을 때만)
