@@ -21,6 +21,8 @@ Shader "Constellation/Sky"
         _ShoreY ("Shore Depth (y)", Range(0.05, 1)) = 0.42
         _Vignette ("Vignette", Range(0, 1)) = 0.35
         _Exposure ("Exposure", Range(0, 3)) = 1
+        _Ripple0 ("Ripple 0 (dir, age)", Vector) = (0, -1, 0, -1)
+        _Ripple1 ("Ripple 1 (dir, age)", Vector) = (0, -1, 0, -1)
     }
     SubShader
     {
@@ -59,6 +61,8 @@ Shader "Constellation/Sky"
                 half _ShoreY;
                 half _Vignette;
                 half _Exposure;
+                float4 _Ripple0;
+                float4 _Ripple1;
             CBUFFER_END
 
             struct Attributes
@@ -95,6 +99,16 @@ Shader "Constellation/Sky"
                 return frac((p3.x + p3.y) * p3.z);
             }
 
+            // 손이 가리킨 자리에서 퍼지는 물결 하나. ripple.xyz는 물결의 중심 방향, w는 시작한 뒤 흐른 시간(초, 음수면 없음).
+            float rippleAt(float3 dir, float4 ripple)
+            {
+                float age = ripple.w;
+                float distanceFromCenter = sqrt(max(2.0 - 2.0 * dot(dir, ripple.xyz), 0.0));
+                float x = (distanceFromCenter - age * 0.12) * 55.0;
+                float envelope = exp(-x * x * 0.08) * saturate(1.0 - age / 3.0) * step(0.0, age);
+                return sin(x) * envelope;
+            }
+
             half4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
@@ -106,11 +120,13 @@ Shader "Constellation/Sky"
                 float depth = -dir.y;
                 float water = step(0.0, depth) * step(0.5, _Lake);
                 float y = dir.y;
+                float handRipple = 0.0;
                 if (water > 0.5)
                 {
+                    handRipple = rippleAt(dir, _Ripple0) + rippleAt(dir, _Ripple1);
                     float ripple = sin(azimuth * 61.0 + _Time.y * 0.7 + depth * 40.0) * 0.0025
                                  + sin(azimuth * 23.0 - _Time.y * 0.45) * 0.003;
-                    y = max(depth + ripple * saturate(depth * 8.0), 0.0);
+                    y = max(depth + (ripple + handRipple * 0.012) * saturate(depth * 8.0), 0.0);
                     // 흔든 뒤 길이를 다시 1로 맞춘다.
                     float horizontal = sqrt(saturate(1.0 - dir.y * dir.y));
                     y = y / sqrt(horizontal * horizontal + y * y);
@@ -139,6 +155,8 @@ Shader "Constellation/Sky"
                 {
                     // 물은 하늘보다 어둡고, 발밑으로 올수록 더 어두워진다. 가장 가까운 곳은 물가의 땅이다.
                     color *= _WaterTint.rgb;
+                    // 손이 일으킨 물결의 마루에 옅은 빛이 맺힌다.
+                    color += _HazeColor.rgb * (max(handRipple, 0.0) * 0.08);
                     color = lerp(color, _GroundColor.rgb, smoothstep(0.2, 0.8, depth));
                     float shore = _ShoreY + 0.03 * sin(azimuth * 3.0 + 1.0) + 0.012 * sin(azimuth * 7.0 + 4.0);
                     color = lerp(color, _GroundColor.rgb, smoothstep(shore - 0.01, shore + 0.01, depth));
