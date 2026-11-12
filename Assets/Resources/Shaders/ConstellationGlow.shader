@@ -10,6 +10,7 @@ Shader "Constellation/Glow"
         _MainTex ("Shape Texture", 2D) = "white" {}
         _UseTexture ("Use Texture", Range(0, 1)) = 0
         _Billboard ("Billboard", Range(0, 1)) = 1
+        _Ring ("Ring", Range(0, 1)) = 0
     }
     SubShader
     {
@@ -36,6 +37,7 @@ Shader "Constellation/Glow"
                 half _Core;
                 half _UseTexture;
                 half _Billboard;
+                half _Ring;
                 float4 _MainTex_ST;
             CBUFFER_END
 
@@ -91,6 +93,9 @@ Shader "Constellation/Glow"
                 float core = saturate(1.0 - r / max(_Core, 0.001));
                 float halo = saturate(1.0 - r);
                 float radial = core * core + halo * halo * 0.55;
+                // _Ring이 1이면 가운데 빛 대신 얇은 고리를 그린다(잡힐 별 표시).
+                float ringBand = saturate(1.0 - abs(r - 0.8) / 0.07);
+                radial = lerp(radial, ringBand * ringBand + halo * halo * 0.12, _Ring);
                 float shape = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv).a;
                 float alpha = lerp(radial, shape, _UseTexture);
                 half3 color = _Color.rgb * input.color.rgb * (alpha * _Intensity * _Color.a * input.color.a);

@@ -65,7 +65,10 @@ namespace Constellation
             m_Active = false;
             m_Preview.positionCount = 0;
             if (m_StarField != null)
+            {
                 m_StarField.SetHovered(-1, -1);
+                m_StarField.SetHandPoints(false, Vector3.zero, false, Vector3.zero);
+            }
         }
 
         /// <summary>선과 선택을 모두 지운다.</summary>
@@ -95,7 +98,8 @@ namespace Constellation
 
         void OnPinchStarted(HandSide side, Vector3 position)
         {
-            Debug.Log("[Drawer] 핀치 시작 active=" + m_Active + " 가장 가까운 별=" + m_StarField.FindNearest(position, 1f) + " 반경내=" + m_StarField.FindNearest(position, m_Config.starGrabRadius));
+            if (m_Config.logStateChanges)
+                Debug.Log("[Drawer] 핀치 시작 active=" + m_Active + " 가장 가까운 별=" + m_StarField.FindNearest(position, 1f) + " 반경내=" + m_StarField.FindNearest(position, m_Config.starGrabRadius));
             if (!m_Active)
                 return;
             m_DragArmed[(int)side] = true;
@@ -121,7 +125,8 @@ namespace Constellation
             }
 
             m_Selected.Add(index);
-            Debug.Log("[Drawer] 별 선택 " + index + " 누적 " + m_Selected.Count);
+            if (m_Config.logStateChanges)
+                Debug.Log("[Drawer] 별 선택 " + index + " 누적 " + m_Selected.Count);
             m_StarField.SetSelected(index, true);
             m_Grow = 0f;
             if (StarAdded != null)
@@ -140,6 +145,7 @@ namespace Constellation
             int hoverLeft = left.isTracked ? m_StarField.FindNearest(left.pinchPoint, m_Config.starGrabRadius) : -1;
             int hoverRight = right.isTracked ? m_StarField.FindNearest(right.pinchPoint, m_Config.starGrabRadius) : -1;
             m_StarField.SetHovered(hoverLeft, hoverRight);
+            m_StarField.SetHandPoints(left.isTracked, left.pinchPoint, right.isTracked, right.pinchPoint);
 
             // 핀치를 유지한 채 다른 별을 지나가면 그 별도 잇는다.
             if (m_Config.selectWhileDragging)

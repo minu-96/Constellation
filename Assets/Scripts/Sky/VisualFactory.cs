@@ -14,6 +14,7 @@ namespace Constellation
         public static readonly int MainTexId = Shader.PropertyToID("_MainTex");
         public static readonly int UseTextureId = Shader.PropertyToID("_UseTexture");
         public static readonly int BillboardId = Shader.PropertyToID("_Billboard");
+        public static readonly int RingId = Shader.PropertyToID("_Ring");
 
         static Mesh s_Quad;
 
@@ -168,6 +169,13 @@ namespace Constellation
         {
             if (m_Material != null)
                 m_Material.SetFloat(VisualFactory.CoreId, core);
+        }
+
+        /// <summary>가운데 빛 대신 얇은 고리를 그린다(0~1).</summary>
+        public void SetRing(float amount)
+        {
+            if (m_Material != null)
+                m_Material.SetFloat(VisualFactory.RingId, amount);
         }
 
         /// <summary>텍스처 알파를 모양으로 쓴다(키워드 아이콘).</summary>
