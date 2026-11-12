@@ -116,7 +116,8 @@ namespace Constellation
                 return;
 
             // 별이 사라졌으면(초기화) 그만둔다.
-            if (m_StarField.Count == 0 || m_Drawer.Count != m_Order.Count)
+            // (같은 별을 다시 지나는 선도 있으므로 별 개수가 아니라 선의 점 개수로 비교한다.)
+            if (m_StarField.Count == 0 || m_Drawer.SelectedIndices.Count != m_Order.Count)
             {
                 Stop();
                 return;
