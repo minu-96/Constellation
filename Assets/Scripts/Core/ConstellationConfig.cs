@@ -22,7 +22,9 @@ namespace Constellation
         /// <summary>손바닥을 펴고 옆으로 빠르게 쓸기</summary>
         PalmSwipe,
         /// <summary>엄지와 중지를 맞대기</summary>
-        MiddlePinch
+        MiddlePinch,
+        /// <summary>오른손으로 잇고 왼손으로 취소. 왼손 핀치를 짧게 하면 마지막 선, 길게 쥐면 전부 지운다</summary>
+        LeftPinch
     }
 
     /// <summary>품질 단계. 기기에서 프레임이 떨어지면 낮춘다.</summary>
@@ -138,6 +140,14 @@ namespace Constellation
         public float completionStepSeconds = 0.18f;
         [Tooltip("헤드셋 안의 카드 화면에도 QR을 띄운다. 기본은 끔: QR은 모니터 페이지(/wall)에서 찍는다")]
         public bool showQrInHeadset = false;
+        [Tooltip("결과 화면에서 '남기기/다시 만들기'를 고르게 한다. 다시 만들면 서버(카드·모두의 하늘)에 올리지 않는다")]
+        public bool enableRedoChoice = true;
+        [Tooltip("한 체험에서 다시 만들 수 있는 횟수. 넘으면 '남기기'만 보인다")]
+        public int maxRedoCount = 2;
+        [Tooltip("고르지 않고 이 시간(초)이 지나면 '남기기'로 처리한다")]
+        public float choiceTimeoutSeconds = 20f;
+        [Tooltip("두 버튼 사이의 거리(m)")]
+        public float choiceButtonSpacing = 0.18f;
         [Tooltip("결과 이야기를 목소리로 읽어 준다(중계 서버의 /tts 사용). 실패하면 글자만 보인다")]
         public bool enableNarration = true;
         [Range(0f, 1f)]
@@ -252,7 +262,9 @@ namespace Constellation
         public float handsTogetherHoldSeconds = 0.7f;
 
         [Header("되돌리기 제스처 (기기 테스트 후 조정)")]
-        public UndoGestureType undoGesture = UndoGestureType.PalmSwipe;
+        public UndoGestureType undoGesture = UndoGestureType.LeftPinch;
+        [Tooltip("LeftPinch일 때 왼손 핀치를 이 시간(초) 넘게 쥐고 있으면 이은 선을 모두 지운다")]
+        public float clearHoldSeconds = 1.2f;
         [Tooltip("손바닥 쓸기로 인정하는 최소 속도(m/s)")]
         public float undoSwipeSpeed = 1.0f;
         [Tooltip("손바닥 쓸기로 인정하는 최소 이동 거리(m)")]
@@ -372,6 +384,13 @@ namespace Constellation
         public string msgTooManyStars = "별은 {0}개까지 이을 수 있어요. 두 손을 모아 완성해 보세요";
         public string msgUndoHintSwipe = "손바닥을 옆으로 쓸면 마지막 별을 지워요";
         public string msgUndoHintMiddlePinch = "엄지와 중지를 맞대면 마지막 별을 지워요";
+        public string msgUndoHintLeftPinch = "왼손으로 살짝 집으면 마지막 선이, 길게 쥐면 전부 지워져요";
+        public string msgDrawingHintRightHand = "오른손 엄지와 검지로 별을 집어 이어 보세요";
+        public string msgCleared = "처음부터 다시 이어 보세요";
+        public string msgChoiceHint = "마음에 들면 '남기기', 아니면 '다시 만들기'를 집어 보세요";
+        public string msgChoiceHintConfirmOnly = "'남기기'를 집으면 별자리 카드가 만들어져요";
+        public string msgConfirmLabel = "남기기";
+        public string msgRedoLabel = "다시 만들기";
         public string msgIdleWarning = "아직 계신가요? 손을 움직여 주세요";
         public string msgAiWaiting = "별빛이 이야기를 모으고 있어요";
         public string msgCardWaiting = "카드를 준비하고 있어요";

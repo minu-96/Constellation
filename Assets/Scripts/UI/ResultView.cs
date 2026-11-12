@@ -22,6 +22,11 @@ namespace Constellation
         /// <summary>이름이 나온 뒤 이야기 글자가 나타나기 시작하기까지의 시간(초)</summary>
         public const float StoryDelaySeconds = k_StoryDelay;
         const float k_CharsPerSecond = 28f;
+        /// <summary>이야기가 다 나타나기까지 걸리는 시간(초)</summary>
+        public static float RevealSeconds(string story)
+        {
+            return k_StoryDelay + (story != null ? story.Length : 0) / k_CharsPerSecond;
+        }
 
         public void Init(ConstellationConfig config)
         {

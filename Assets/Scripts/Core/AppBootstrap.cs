@@ -53,6 +53,13 @@ namespace Constellation
 
             FinishButton finishButton = Create<FinishButton>("Finish Button");
             finishButton.Init(config, hands);
+            // 결과 화면의 '남기기'와 '다시 만들기'. 완성 별과 같은 모양을 쓴다.
+            FinishButton confirmButton = Create<FinishButton>("Confirm Button");
+            confirmButton.Init(config, hands);
+            confirmButton.SetLabel(config.msgConfirmLabel);
+            FinishButton redoButton = Create<FinishButton>("Redo Button");
+            redoButton.Init(config, hands);
+            redoButton.SetLabel(config.msgRedoLabel);
 
             CompletionEffect completionEffect = Create<CompletionEffect>("Completion Effect");
             completionEffect.Init(config, starField, drawer);
@@ -100,6 +107,8 @@ namespace Constellation
             session.completionEffect = completionEffect;
             session.gestureGuide = gestureGuide;
             session.finishButton = finishButton;
+            session.confirmButton = confirmButton;
+            session.redoButton = redoButton;
             session.capture = capture;
             session.aiClient = aiClient;
             session.narration = narration;

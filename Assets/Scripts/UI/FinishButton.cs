@@ -65,6 +65,12 @@ namespace Constellation
 
         public Vector3 Position { get { return m_Root.position; } }
 
+        /// <summary>별 아래 글자를 바꾼다('완성' 대신 '남기기', '다시 만들기' 등으로 쓸 때).</summary>
+        public void SetLabel(string label)
+        {
+            m_Label.text = label ?? string.Empty;
+        }
+
         void OnPinchStarted(HandSide side, Vector3 position)
         {
             if (!m_Visible || m_Level < 0.5f)

@@ -29,7 +29,8 @@ Main 씬을 열고 Play 한다. 헤드셋 없이 아래 키로 손을 흉내 낼
 | 마우스 휠 | 손까지의 거리 |
 | 마우스 왼쪽 버튼 | 핀치 |
 | Space (누르고 있기), 마우스 오른쪽 클릭 | 양손 모으기 (오른쪽 클릭은 꺼짐 → 떨어짐 → 모음 순서로 바뀜) |
-| Z | 되돌리기 |
+| Z | 되돌리기(마지막 선 취소) |
+| X | 이은 선 모두 지우기 |
 
 - [ ] H를 누르면 대기 화면에서 키워드 선택으로 넘어간다.
 - [ ] 아이콘 하나를 클릭하면 별이 나타난다.
@@ -97,7 +98,8 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 초보 안내 | `enableFinishButton`, `finishButtonDrop`, `finishButtonRadius` | 켬, 9°, 0.06 m |
 | 양손 모으기 | `handsTogetherDistance` / `handsTogetherReleaseDistance` | 0.11 / 0.2 m |
 | 양손 모으기 | `handsTogetherHoldSeconds` | 0.7초 |
-| 되돌리기 | `undoGesture` | PalmSwipe (다른 선택지: MiddlePinch) |
+| 되돌리기 | `undoGesture` | LeftPinch: 오른손으로 잇고, 왼손을 살짝 집었다 놓으면 마지막 선 취소, `clearHoldSeconds`(1.2초) 넘게 쥐면 전부 지움 (다른 선택지: PalmSwipe, MiddlePinch) |
+| 다시 만들기 | `enableRedoChoice` / `maxRedoCount` / `choiceTimeoutSeconds` | 켬 / 2회 / 20초: 결과 화면에서 '남기기'를 골라야 카드·모두의 하늘에 올라간다. '다시 만들기'는 올리지 않고 같은 키워드로 새 별을 뿌린다. 고르지 않으면 20초 뒤 '남기기' |
 | 되돌리기 | `undoSwipeSpeed` / `undoSwipeDistance` | 1.0 m/s / 0.22 m |
 | 손 인식 | `handCheckHoldSeconds` / `handLostGuideDelay` | 0.4 / 1.0초 |
 | 시간 | `keywordIdleTimeoutSeconds` / `drawingIdleTimeoutSeconds` | 45 / 90초 |

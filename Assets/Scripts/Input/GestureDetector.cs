@@ -17,6 +17,8 @@ namespace Constellation
     {
         public event Action HandsTogether;
         public event Action UndoRequested;
+        /// <summary>이은 선을 모두 지우라는 요청(LeftPinch: 왼손 핀치를 길게 쥐기).</summary>
+        public event Action ClearRequested;
 
         /// <summary>꺼 두면 아무 제스처도 알리지 않는다. Drawing 상태에서만 켠다.</summary>
         public bool Detecting { get; set; }
@@ -33,6 +35,21 @@ namespace Constellation
         float m_UndoReadyTime;
         readonly float[] m_SwipeTravel = new float[2];
         readonly float[] m_SwipeSign = new float[2];
+        // 왼손 핀치(LeftPinch): 쥔 시각과 길게 쥐기로 이미 지웠는지
+        bool m_LeftHolding;
+        float m_LeftHoldStart;
+        bool m_LeftClearFired;
+
+        /// <summary>왼손을 길게 쥐는 중이면 0~1로 얼마나 찼는지. 아니면 0.</summary>
+        public float ClearHoldProgress
+        {
+            get
+            {
+                if (!Detecting || !m_LeftHolding || m_LeftClearFired || m_Config == null)
+                    return 0f;
+                return Mathf.Clamp01((Time.unscaledTime - m_LeftHoldStart) / Mathf.Max(0.1f, m_Config.clearHoldSeconds));
+            }
+        }
 
         public void Init(ConstellationConfig config, HandInput hands, Transform head)
         {
@@ -40,12 +57,18 @@ namespace Constellation
             m_Hands = hands;
             m_Head = head;
             m_Hands.MiddlePinchStarted += OnMiddlePinch;
+            m_Hands.PinchStarted += OnPinchStarted;
+            m_Hands.PinchEnded += OnPinchEnded;
         }
 
         void OnDestroy()
         {
             if (m_Hands != null)
+            {
                 m_Hands.MiddlePinchStarted -= OnMiddlePinch;
+                m_Hands.PinchStarted -= OnPinchStarted;
+                m_Hands.PinchEnded -= OnPinchEnded;
+            }
         }
 
         /// <summary>진행 중이던 판정을 지운다. 상태가 바뀔 때 부른다.</summary>
@@ -56,6 +79,8 @@ namespace Constellation
             m_TogetherFired = true;
             m_SwipeTravel[0] = m_SwipeTravel[1] = 0f;
             m_UndoReadyTime = Time.unscaledTime + 0.5f;
+            m_LeftHolding = false;
+            m_LeftClearFired = false;
         }
 
         void Update()
@@ -64,6 +89,7 @@ namespace Constellation
                 return;
 
             UpdateHandsTogether();
+            UpdateLeftHold();
             if (m_Config.undoGesture == UndoGestureType.PalmSwipe)
             {
                 UpdateSwipe(HandSide.Left);
@@ -74,6 +100,8 @@ namespace Constellation
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null && keyboard.zKey.wasPressedThisFrame)
                 FireUndo();
+            if (keyboard != null && keyboard.xKey.wasPressedThisFrame && ClearRequested != null)
+                ClearRequested();
 #endif
         }
 
@@ -157,6 +185,48 @@ namespace Constellation
             }
         }
 
+        bool LeftPinchMode
+        {
+            get { return m_Config != null && m_Config.undoGesture == UndoGestureType.LeftPinch; }
+        }
+
+        void OnPinchStarted(HandSide side, Vector3 position)
+        {
+            if (!Detecting || !LeftPinchMode || side != HandSide.Left)
+                return;
+            m_LeftHolding = true;
+            m_LeftHoldStart = Time.unscaledTime;
+            m_LeftClearFired = false;
+        }
+
+        // 짧게 쥐었다 놓으면 마지막 선 취소. 길게 쥐어 이미 전부 지웠으면 놓아도 아무 일 없다.
+        void OnPinchEnded(HandSide side)
+        {
+            if (side != HandSide.Left || !m_LeftHolding)
+                return;
+            m_LeftHolding = false;
+            if (!Detecting || !LeftPinchMode || m_LeftClearFired)
+                return;
+            FireUndo();
+        }
+
+        void UpdateLeftHold()
+        {
+            if (!m_LeftHolding || m_LeftClearFired || !LeftPinchMode)
+                return;
+            if (!m_Hands.Left.isTracked)
+            {
+                // 쥔 채로 추적이 끊기면 없던 일로 한다.
+                m_LeftHolding = false;
+                return;
+            }
+            if (Time.unscaledTime - m_LeftHoldStart < m_Config.clearHoldSeconds)
+                return;
+            m_LeftClearFired = true;
+            if (ClearRequested != null)
+                ClearRequested();
+        }
+
         void OnMiddlePinch(HandSide side)
         {
             if (m_Config == null || !Detecting || m_Config.undoGesture != UndoGestureType.MiddlePinch)
@@ -168,7 +238,8 @@ namespace Constellation
         {
             if (Time.unscaledTime < m_UndoReadyTime)
                 return;
-            m_UndoReadyTime = Time.unscaledTime + m_Config.undoCooldownSeconds;
+            // 왼손 탭은 실수로 두 번 나기 어려우므로 짧게 쉰다(연달아 여러 선을 지울 수 있게).
+            m_UndoReadyTime = Time.unscaledTime + (LeftPinchMode ? 0.25f : m_Config.undoCooldownSeconds);
             if (UndoRequested != null)
                 UndoRequested();
         }

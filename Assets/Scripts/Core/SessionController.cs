@@ -22,6 +22,8 @@ namespace Constellation
         [NonSerialized] public CompletionEffect completionEffect;
         [NonSerialized] public GestureGuide gestureGuide;
         [NonSerialized] public FinishButton finishButton;
+        [NonSerialized] public FinishButton confirmButton;
+        [NonSerialized] public FinishButton redoButton;
         [NonSerialized] public CaptureService capture;
         [NonSerialized] public AiClient aiClient;
         [NonSerialized] public NarrationClient narration;
@@ -50,6 +52,10 @@ namespace Constellation
         string m_ResultName;
         string m_ResultStory;
         bool m_AiDone;
+        // 결과 화면의 고르기: 버튼을 띄웠는지, 이번 체험에서 다시 만든 횟수
+        bool m_ChoiceShown;
+        float m_ChoiceShownTime;
+        int m_RedoCount;
         bool m_CardQrShown;
         float m_CardReadyTime;
 
@@ -80,6 +86,9 @@ namespace Constellation
             completionEffect.StarReached += OnCompletionStarReached;
             drawer.Missed += OnMissed;
             finishButton.Pressed += OnFinishPressed;
+            confirmButton.Pressed += OnConfirmPressed;
+            redoButton.Pressed += OnRedoPressed;
+            gestures.ClearRequested += OnClearRequested;
 
             m_Started = true;
             State = SessionState.Idle;
@@ -104,10 +113,15 @@ namespace Constellation
                 completionEffect.StarReached -= OnCompletionStarReached;
             if (finishButton != null)
                 finishButton.Pressed -= OnFinishPressed;
+            if (confirmButton != null)
+                confirmButton.Pressed -= OnConfirmPressed;
+            if (redoButton != null)
+                redoButton.Pressed -= OnRedoPressed;
             if (gestures != null)
             {
                 gestures.HandsTogether -= OnHandsTogether;
                 gestures.UndoRequested -= OnUndoRequested;
+                gestures.ClearRequested -= OnClearRequested;
             }
             ReleaseCapture();
         }
@@ -178,7 +192,7 @@ namespace Constellation
 
                 case SessionState.Drawing:
                     guide.SetTitle(string.Empty);
-                    guide.SetHint(config.msgDrawingHint);
+                    guide.SetHint(DrawingHint());
                     drawer.Begin();
                     gestures.ResetGestures();
                     gestures.Detecting = true;
@@ -205,8 +219,10 @@ namespace Constellation
                     starField.SetCandidatesVisible(false);
                     starField.RaiseToSky(true);
                     resultView.Show(m_ResultName, m_ResultStory, m_AnchorPosition, m_AnchorRotation);
-                    // 카드 화면에서 QR이 바로 보이도록 업로드를 미리 시작한다.
-                    cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg, m_Shape);
+                    m_ChoiceShown = false;
+                    // 고르기를 쓰지 않으면 예전처럼 바로 올린다. 쓰면 '남기기'를 고른 뒤에 올린다(다시 만들면 올리지 않는다).
+                    if (!config.enableRedoChoice)
+                        cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg, m_Shape);
                     audioManager.PlayResult();
                     // 이야기 글자가 나타나기 시작할 때쯤부터 읽는다(ResultView의 이야기 지연과 같은 값).
                     narration.Play(m_ResultStory, ResultView.StoryDelaySeconds);
@@ -244,6 +260,11 @@ namespace Constellation
 
                 case SessionState.AiRequest:
                     gatherEffect.Stop();
+                    break;
+
+                case SessionState.Result:
+                    confirmButton.Hide();
+                    redoButton.Hide();
                     break;
 
                 case SessionState.Card:
@@ -432,8 +453,90 @@ namespace Constellation
 
         void UpdateResult()
         {
-            if (StateSeconds >= config.resultSeconds)
-                Go(SessionState.Card);
+            if (!config.enableRedoChoice)
+            {
+                if (StateSeconds >= config.resultSeconds)
+                    Go(SessionState.Card);
+                return;
+            }
+
+            // 이야기가 다 나타난 뒤에 '남기기 / 다시 만들기'를 띄운다.
+            if (!m_ChoiceShown)
+            {
+                if (StateSeconds >= ResultView.RevealSeconds(m_ResultStory) + 0.8f)
+                    ShowChoice();
+                return;
+            }
+
+            // 고르지 않고 떠났거나 망설이면 '남기기'로 처리한다.
+            if (Now - m_ChoiceShownTime >= config.choiceTimeoutSeconds)
+                Confirm();
+        }
+
+        bool CanRedo
+        {
+            get { return m_RedoCount < config.maxRedoCount; }
+        }
+
+        void ShowChoice()
+        {
+            m_ChoiceShown = true;
+            m_ChoiceShownTime = Now;
+            // 손이 닿는 거리, 완성 별이 있던 높이에 둔다. 다시 만들 수 있으면 왼쪽에 '다시 만들기', 오른쪽에 '남기기'.
+            Vector3 center = ZonePoint(config.ActiveStarZone.elevationMin - config.finishButtonDrop);
+            Vector3 side = m_AnchorRotation * Vector3.right * (config.choiceButtonSpacing * 0.5f);
+            if (CanRedo)
+            {
+                redoButton.Show(center - side, m_AnchorRotation);
+                confirmButton.Show(center + side, m_AnchorRotation);
+                guide.SetHint(config.msgChoiceHint);
+            }
+            else
+            {
+                confirmButton.Show(center, m_AnchorRotation);
+                guide.SetHint(config.msgChoiceHintConfirmOnly);
+            }
+        }
+
+        void OnConfirmPressed()
+        {
+            if (State != SessionState.Result || !m_ChoiceShown)
+                return;
+            m_LastActivityTime = Now;
+            Confirm();
+        }
+
+        // 확정: 이때 처음으로 카드와 모두의 하늘에 올린다.
+        void Confirm()
+        {
+            audioManager.PlayKeywordSelect();
+            guide.SetHint(string.Empty);
+            cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg, m_Shape);
+            Go(SessionState.Card);
+        }
+
+        void OnRedoPressed()
+        {
+            if (State != SessionState.Result || !m_ChoiceShown || !CanRedo)
+                return;
+            m_LastActivityTime = Now;
+            m_RedoCount++;
+            audioManager.PlayUndo();
+
+            // 이번 결과는 서버에 올리지 않고 버린다. 같은 키워드로 새 별을 뿌려 다시 잇는다.
+            narration.Stop();
+            aiClient.Cancel();
+            resultView.Hide();
+            completionEffect.Stop();
+            drawer.Clear();
+            ReleaseCapture();
+            m_ResultName = null;
+            m_ResultStory = null;
+            m_Shape = null;
+            m_StarCount = 0;
+            starField.Spawn(m_AnchorPosition, m_AnchorRotation);
+            guide.ClearAlert();
+            Go(SessionState.Drawing);
         }
 
         void UpdateCard()
@@ -502,7 +605,7 @@ namespace Constellation
             m_LastActivityTime = Now;
             m_LastStarTime = Now;
             UpdateFinishButton();
-            guide.SetHint(count >= config.minStars ? FinishHint() : config.msgDrawingHint);
+            guide.SetHint(count >= config.minStars ? FinishHint() : DrawingHint());
             if (count == 2)
                 guide.FlashAlert(UndoHint(), config.alertSeconds + 1f);
             if (count <= 1)
@@ -530,8 +633,23 @@ namespace Constellation
         {
             m_StarCount = count;
             UpdateFinishButton();
-            guide.SetHint(count >= config.minStars ? FinishHint() : config.msgDrawingHint);
+            guide.SetHint(count >= config.minStars ? FinishHint() : DrawingHint());
             audioManager.PlayUndo();
+        }
+
+        // 왼손을 길게 쥐었다: 이은 선을 모두 지우고 처음부터.
+        void OnClearRequested()
+        {
+            if (State != SessionState.Drawing || drawer.Count == 0)
+                return;
+            m_LastActivityTime = Now;
+            drawer.ClearAll();
+            guide.FlashAlert(config.msgCleared, config.alertSeconds);
+        }
+
+        string DrawingHint()
+        {
+            return config.undoGesture == UndoGestureType.LeftPinch ? config.msgDrawingHintRightHand : config.msgDrawingHint;
         }
 
         void OnHandsTogether()
@@ -580,7 +698,12 @@ namespace Constellation
 
         string UndoHint()
         {
-            return config.undoGesture == UndoGestureType.MiddlePinch ? config.msgUndoHintMiddlePinch : config.msgUndoHintSwipe;
+            switch (config.undoGesture)
+            {
+                case UndoGestureType.MiddlePinch: return config.msgUndoHintMiddlePinch;
+                case UndoGestureType.LeftPinch: return config.msgUndoHintLeftPinch;
+                default: return config.msgUndoHintSwipe;
+            }
         }
 
         void OnAiResult(AiResult result)
@@ -653,6 +776,10 @@ namespace Constellation
             keywordSky.Hide();
             gestureGuide.Hide();
             finishButton.Hide();
+            confirmButton.Hide();
+            redoButton.Hide();
+            m_ChoiceShown = false;
+            m_RedoCount = 0;
             completionEffect.Stop();
             drawer.Clear();
             starField.Clear();

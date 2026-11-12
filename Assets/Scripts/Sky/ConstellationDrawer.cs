@@ -126,6 +126,27 @@ namespace Constellation
                 Undone(m_Unique);
         }
 
+        /// <summary>이은 별과 선을 모두 지운다(별 잇기는 계속된다). 지운 게 없으면 아무 일도 없다.</summary>
+        public void ClearAll()
+        {
+            if (!m_Active || m_Selected.Count == 0)
+                return;
+            for (int i = 0; i < m_Selected.Count; i++)
+                m_StarField.SetSelected(m_Selected[i], false);
+            m_Selected.Clear();
+            m_Unique = 0;
+            m_DwellIndex = -1;
+            m_Grow = 1f;
+            m_DragArmed[0] = m_DragArmed[1] = false;
+            if (Undone != null)
+                Undone(0);
+        }
+
+        bool LeftHandCancels
+        {
+            get { return m_Config.undoGesture == UndoGestureType.LeftPinch; }
+        }
+
         /// <summary>이은 순서로 n번째 별이 선 위에서 놓인 자리(0~1).</summary>
         public float GetStarUv(int order)
         {
@@ -153,6 +174,9 @@ namespace Constellation
             if (m_Config.logStateChanges)
                 Debug.Log("[Drawer] 핀치 시작 active=" + m_Active + " 가장 가까운 별=" + m_StarField.FindNearest(position, 1f) + " 반경내=" + m_StarField.FindNearest(position, m_Config.starGrabRadius));
             if (!m_Active)
+                return;
+            // 왼손이 취소 담당이면 왼손 핀치로는 별을 잡지 않는다.
+            if (LeftHandCancels && side == HandSide.Left)
                 return;
             m_DragArmed[(int)side] = true;
 
@@ -239,15 +263,15 @@ namespace Constellation
             HandState right = m_Hands.Right;
 
             // 손이 가까이 간 별을 밝혀 어느 별이 잡힐지 보여 준다.
-            int hoverLeft = left.isTracked ? m_StarField.FindNearest(left.pinchPoint, GrabRadius) : -1;
+            int hoverLeft = left.isTracked && !LeftHandCancels ? m_StarField.FindNearest(left.pinchPoint, GrabRadius) : -1;
             int hoverRight = right.isTracked ? m_StarField.FindNearest(right.pinchPoint, GrabRadius) : -1;
             m_StarField.SetHovered(hoverLeft, hoverRight);
-            m_StarField.SetHandPoints(left.isTracked, left.pinchPoint, right.isTracked, right.pinchPoint);
+            m_StarField.SetHandPoints(left.isTracked && !LeftHandCancels, left.pinchPoint, right.isTracked, right.pinchPoint);
 
             // 핀치를 유지한 채 다른 별 쪽으로 끌면 그 별에 붙어 이어진다(머리에서 본 방향 기준).
             if (m_Config.selectWhileDragging)
             {
-                if (left.isTracked && left.isPinching && m_DragArmed[0])
+                if (left.isTracked && left.isPinching && m_DragArmed[0] && !LeftHandCancels)
                     DragSelect(left.pinchPoint, ref hoverLeft);
                 if (right.isTracked && right.isPinching && m_DragArmed[1])
                     DragSelect(right.pinchPoint, ref hoverRight);
