@@ -46,8 +46,9 @@ namespace Constellation.EditorTools
                 return;
 
             EditorSceneManager.OpenScene(k_ScenePath);
-            SessionState.SetBool(ScreenshotDirector.RequestKey, true);
-            SessionState.SetBool(ScreenshotDirector.QuitKey, quitWhenDone);
+            // Constellation.SessionState(체험 상태)와 이름이 같아서 에디터 쪽은 네임스페이스를 붙여 쓴다.
+            UnityEditor.SessionState.SetBool(ScreenshotDirector.RequestKey, true);
+            UnityEditor.SessionState.SetBool(ScreenshotDirector.QuitKey, quitWhenDone);
             EditorApplication.isPlaying = true;
         }
 
