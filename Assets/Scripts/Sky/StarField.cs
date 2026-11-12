@@ -35,6 +35,13 @@ namespace Constellation
         Quaternion m_BaseRotation = Quaternion.identity;
         float m_SpawnTime;
         bool m_CandidatesVisible = true;
+        // 완성 순간 별자리에서 바깥으로 퍼지는 빛의 물결. 물결이 닿은 주변 별이 한 번 반짝이고 사라진다.
+        bool m_RippleActive;
+        bool m_RippleExpected;
+        float m_RippleStart;
+        Vector3 m_RippleCenter;
+        const float k_RippleSpeed = 0.9f;   // m/s (하늘로 올리기 전의 크기 기준)
+        const float k_RippleFlash = 0.5f;   // 물결이 닿은 별이 반짝이는 시간(초)
         bool m_Raised;
         float m_Raise;
         float m_Distance = 0.45f;
@@ -132,6 +139,8 @@ namespace Constellation
             }
             m_Stars.Clear();
             m_CandidatesVisible = true;
+            m_RippleActive = false;
+            m_RippleExpected = false;
             m_RingTargets[0] = m_RingTargets[1] = -1;
             for (int i = 0; i < m_Rings.Length; i++)
             {
@@ -188,6 +197,30 @@ namespace Constellation
                     nearest = Mathf.Min(nearest, Vector3.Distance(position, second));
                 star.proximity = Mathf.Clamp01(1f - (nearest - grab) / range);
             }
+        }
+
+        /// <summary>
+        /// 곧 물결이 올 것이라고 알린다. 그때까지는 후보 별을 숨겨도 그대로 남아 있다가, 물결이 닿을 때 사라진다.
+        /// </summary>
+        public void ExpectRipple()
+        {
+            m_RippleExpected = true;
+            m_RippleActive = true;
+            m_RippleStart = float.MaxValue;
+        }
+
+        /// <summary>
+        /// 주어진 위치에서 빛의 물결을 퍼뜨린다. 고르지 않은 주변 별들이 물결이 닿을 때 한 번 반짝인 뒤 사라진다.
+        /// 후보 별을 숨긴 뒤(SetCandidatesVisible(false))에 불러도 물결이 닿기 전의 별은 남아 있다.
+        /// </summary>
+        public void Ripple(Vector3 worldCenter)
+        {
+            if (!m_RippleExpected && !m_CandidatesVisible)
+                return; // 이미 사라진 별을 다시 띄우지는 않는다.
+            m_RippleExpected = false;
+            m_RippleActive = true;
+            m_RippleStart = Time.time;
+            m_RippleCenter = worldCenter;
         }
 
         /// <summary>별 하나를 잠깐 크게 번쩍이게 한다(완성 연출).</summary>
@@ -255,6 +288,12 @@ namespace Constellation
         /// <summary>별자리를 하늘 높이 올린다(결과 화면). 머리에서 본 모양은 그대로이고 멀어지기만 한다.</summary>
         public void RaiseToSky(bool raised)
         {
+            // 물결을 기다리던 중인데 끝내 오지 않았다면(연출이 중단됨) 주변 별을 그냥 숨긴다.
+            if (raised && m_RippleExpected)
+            {
+                m_RippleExpected = false;
+                m_RippleActive = false;
+            }
             m_Raised = raised;
         }
 
@@ -329,6 +368,23 @@ namespace Constellation
                 else if (!m_CandidatesVisible)
                 {
                     targetIntensity = 0f;
+                    if (m_RippleActive)
+                    {
+                        // 물결이 닿기 전에는 그대로 있고, 닿는 순간 밝게 반짝였다가 사라진다.
+                        float reach = Vector3.Distance(star.transform.position, m_RippleCenter) / Mathf.Max(0.01f, CurrentScale) / k_RippleSpeed;
+                        float since = Time.time - m_RippleStart - reach;
+                        if (since < 0f)
+                        {
+                            targetIntensity = 1.15f * twinkle;
+                        }
+                        else if (since < k_RippleFlash)
+                        {
+                            float glow = 1f - since / k_RippleFlash;
+                            targetIntensity = 3.2f * glow;
+                            targetSize = star.baseSize * (1f + 0.6f * glow);
+                            color = m_Config.starHoverColor;
+                        }
+                    }
                 }
                 else if (star.hovered)
                 {

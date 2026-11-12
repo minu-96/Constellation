@@ -117,6 +117,10 @@ namespace Constellation
         [Range(0f, 2f)] public float lineFlowStrength = 0.6f;
         [Tooltip("완성 순간 별이 차례로 번쩍이고 빛이 선을 훑은 뒤 별자리가 새겨지는 연출")]
         public bool enableCompletionEffect = true;
+        [Tooltip("별자리가 새겨지는 순간 빛이 퍼져 주변 별과 배경 별이 반응한다")]
+        public bool enableCompletionRipple = true;
+        [Tooltip("손이 호수 쪽(지평선 아래)을 가리키면 그 자리에서 물결이 인다")]
+        public bool enableWaterRipples = true;
         [Tooltip("완성 연출에서 별 하나에서 다음 별로 넘어가는 시간(초)")]
         public float completionStepSeconds = 0.18f;
         [Tooltip("헤드셋 안의 카드 화면에도 QR을 띄운다. 기본은 끔: QR은 모니터 페이지(/wall)에서 찍는다")]
