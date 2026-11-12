@@ -119,6 +119,16 @@ namespace Constellation
         public bool enableCompletionEffect = true;
         [Tooltip("완성 연출에서 별 하나에서 다음 별로 넘어가는 시간(초)")]
         public float completionStepSeconds = 0.18f;
+        [Tooltip("모두의 하늘: 앞선 방문자들의 별자리를 먼 하늘에 그린다(중계 서버의 /sky 에서 받아 온다)")]
+        public bool enableSharedSky = true;
+        [Tooltip("하늘에 그리는 별자리의 최대 개수(최근 것부터)")]
+        public int sharedSkyMaxCount = 40;
+        [Tooltip("이름표를 붙이는 개수(가장 최근 것부터). 품질 단계가 Low면 붙이지 않는다")]
+        public int sharedSkyLabelCount = 12;
+        [Tooltip("하늘에서 별자리 하나가 차지하는 크기(도)")]
+        public float sharedSkySize = 9f;
+        [Tooltip("모두의 하늘 밝기. 잡는 별을 방해하지 않게 어둡게 둔다")]
+        [Range(0f, 2f)] public float sharedSkyBrightness = 0.55f;
         [Tooltip("가끔 별똥별이 지나간다")]
         public bool enableShootingStars = true;
         [Tooltip("별똥별 사이의 간격(초, 최소~최대)")]
@@ -334,6 +344,10 @@ namespace Constellation
         public string msgIdleWarning = "아직 계신가요? 손을 움직여 주세요";
         public string msgAiWaiting = "별빛이 이야기를 모으고 있어요";
         public string msgCardWaiting = "카드를 준비하고 있어요";
+        [Tooltip("{0} 자리에 번호가 들어간다")]
+        public string msgCardNumber = "{0}번째 별자리";
+        [Tooltip("모두의 하늘 이름표. {0}: 이름, {1}: 번호")]
+        public string msgSharedSkyLabel = "{0} · {1}번째";
         public string msgCardReady = "QR을 찍으면 카드를 받을 수 있어요";
         public string msgGoodbye = "함께해 주셔서 고마워요";
 

@@ -36,6 +36,7 @@ namespace Constellation
         {
             public string id;
             public string url;
+            public int number;
         }
 
         ConstellationConfig m_Config;
@@ -52,6 +53,7 @@ namespace Constellation
         TextMeshPro m_Name;
         TextMeshPro m_Story;
         TextMeshPro m_Caption;
+        TextMeshPro m_Number;
         bool m_Visible;
         float m_Appear;
 
@@ -61,6 +63,8 @@ namespace Constellation
         public bool IsReady { get { return m_State == UploadState.Ready; } }
         public bool HasFailed { get { return m_State == UploadState.Failed; } }
         public string CardUrl { get { return m_CardUrl; } }
+        /// <summary>서버가 매긴 "몇 번째 별자리" 번호. 아직 모르거나 받지 못했으면 0.</summary>
+        public int CardNumber { get; private set; }
 
         public void Init(ConstellationConfig config)
         {
@@ -84,6 +88,9 @@ namespace Constellation
             m_Image = VisualFactory.CreatePanel("Constellation Image", m_Root, new Vector2(0.34f, 0.34f), Color.white, null);
             m_Image.transform.localPosition = new Vector3(leftX, 0.15f, 0f);
 
+            m_Number = TextFactory.Create("Card Number", m_Root, 0.032f, new Vector2(0.56f, 0.05f), TextAlignmentOptions.Center, m_Config.textColor);
+            m_Number.transform.localPosition = new Vector3(leftX, -0.035f, 0f);
+
             m_Name = TextFactory.Create("Card Name", m_Root, 0.055f, new Vector2(0.56f, 0.08f), TextAlignmentOptions.Center, m_Config.textAccentColor);
             m_Name.textWrappingMode = TextWrappingModes.NoWrap;
             m_Name.transform.localPosition = new Vector3(leftX, -0.08f, 0f);
@@ -101,10 +108,12 @@ namespace Constellation
         }
 
         /// <summary>카드 데이터를 서버에 올리기 시작한다. 결과 화면에 들어갈 때 미리 부른다.</summary>
-        public void Prepare(string keywordId, string constellationName, string story, byte[] jpeg)
+        /// <param name="shape">별자리 모양(0~1로 맞춘 점들). 모두의 하늘에 쌓이고 번호를 받는 데 쓴다. 없어도 된다.</param>
+        public void Prepare(string keywordId, string constellationName, string story, byte[] jpeg, System.Collections.Generic.IList<Vector2> shape)
         {
             CancelUpload();
             m_CardUrl = null;
+            CardNumber = 0;
 
             AppSecrets secrets = AppSecrets.Load();
             if (!secrets.IsConfigured || jpeg == null || jpeg.Length == 0)
@@ -115,17 +124,17 @@ namespace Constellation
 
             m_State = UploadState.Uploading;
             m_UploadId++;
-            m_Upload = StartCoroutine(Upload(m_UploadId, secrets, keywordId, constellationName, story, jpeg));
+            m_Upload = StartCoroutine(Upload(m_UploadId, secrets, keywordId, constellationName, story, jpeg, shape));
         }
 
-        IEnumerator Upload(int id, AppSecrets secrets, string keywordId, string constellationName, string story, byte[] jpeg)
+        IEnumerator Upload(int id, AppSecrets secrets, string keywordId, string constellationName, string story, byte[] jpeg, System.Collections.Generic.IList<Vector2> shape)
         {
             CardRequest body = new CardRequest();
             body.keyword = keywordId;
             body.name = constellationName;
             body.story = story;
             body.image = Convert.ToBase64String(jpeg);
-            byte[] payload = Encoding.UTF8.GetBytes(JsonUtility.ToJson(body));
+            byte[] payload = Encoding.UTF8.GetBytes(AppendShape(JsonUtility.ToJson(body), shape));
 
             UnityWebRequest request = new UnityWebRequest(secrets.Url("/card"), UnityWebRequest.kHttpVerbPOST);
             m_Request = request;
@@ -151,13 +160,17 @@ namespace Constellation
             }
 
             string url = null;
+            int number = 0;
             if (!timedOut && request.result == UnityWebRequest.Result.Success && request.responseCode == 200)
             {
                 try
                 {
                     CardResponse response = JsonUtility.FromJson<CardResponse>(request.downloadHandler.text);
                     if (response != null && !string.IsNullOrEmpty(response.url) && response.url.StartsWith("http"))
+                    {
                         url = response.url;
+                        number = response.number;
+                    }
                 }
                 catch (Exception)
                 {
@@ -184,6 +197,7 @@ namespace Constellation
             ReleaseQr();
             m_QrTexture = qr;
             m_CardUrl = url;
+            CardNumber = number;
             m_Qr.sharedMaterial.SetTexture(VisualFactory.MainTexId, qr);
             m_State = UploadState.Ready;
         }
@@ -218,6 +232,7 @@ namespace Constellation
             Hide();
             ReleaseQr();
             m_CardUrl = null;
+            CardNumber = 0;
             m_State = UploadState.None;
             if (m_Qr != null)
                 m_Qr.enabled = false;
@@ -236,6 +251,29 @@ namespace Constellation
             bool ready = m_State == UploadState.Ready;
             m_Qr.enabled = ready;
             m_Caption.text = ready ? m_Config.msgCardReady : m_Config.msgCardWaiting;
+            m_Number.text = ready && CardNumber > 0 ? string.Format(m_Config.msgCardNumber, CardNumber) : string.Empty;
+        }
+
+        // JsonUtility는 겹친 배열([[x, y], …])을 만들지 못해서, 모양은 직접 이어 붙인다.
+        static string AppendShape(string json, System.Collections.Generic.IList<Vector2> shape)
+        {
+            if (shape == null || shape.Count < 2 || string.IsNullOrEmpty(json) || !json.EndsWith("}"))
+                return json;
+            StringBuilder builder = new StringBuilder(json, 0, json.Length - 1, json.Length + shape.Count * 16 + 16);
+            builder.Append(",\"points\":[");
+            System.Globalization.CultureInfo invariant = System.Globalization.CultureInfo.InvariantCulture;
+            for (int i = 0; i < shape.Count; i++)
+            {
+                if (i > 0)
+                    builder.Append(',');
+                builder.Append('[');
+                builder.Append(Mathf.Clamp01(shape[i].x).ToString("0.###", invariant));
+                builder.Append(',');
+                builder.Append(Mathf.Clamp01(shape[i].y).ToString("0.###", invariant));
+                builder.Append(']');
+            }
+            builder.Append("]}");
+            return builder.ToString();
         }
 
         void CancelUpload()
