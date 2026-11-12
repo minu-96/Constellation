@@ -126,6 +126,20 @@ describe("GET /wall", () => {
     expect(page).not.toContain(TEST_ENV.APP_SHARED_TOKEN);
   });
 
+  it("최근 3개에는 카드로 가는 QR을 붙이고, 목록(/sky)에는 카드 id를 내보내지 않는다", async () => {
+    const t = setup();
+    const env = { ...TEST_ENV, CARDS: fakeKv(), RATE_LIMIT_PER_MINUTE: "1000" };
+    const ids = [];
+    for (let i = 0; i < 5; i++) ids.push((await (await t.send(post(cardBody(), 0), env)).json()).id);
+    const page = await (await t.send(get("/wall"), env)).text();
+    expect(page.match(/class="qr"/g)).toHaveLength(3);
+    expect(page).toContain("카드를 받아 가세요");
+
+    const sky = await (await t.send(get("/sky"), env)).json();
+    expect(sky.items.every((item) => item.id === undefined)).toBe(true);
+    for (const id of ids) expect(JSON.stringify(sky)).not.toContain(id);
+  });
+
   it("아직 하나도 없으면 기다리는 문구를 보여 준다", async () => {
     const t = setup();
     const page = await (await t.send(get("/wall"), { ...TEST_ENV, CARDS: fakeKv() })).text();
