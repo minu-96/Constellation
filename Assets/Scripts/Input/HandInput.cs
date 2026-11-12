@@ -86,6 +86,10 @@ namespace Constellation
             m_Config = config;
             m_Origin = trackingOrigin;
             m_Camera = headCamera;
+#if UNITY_EDITOR
+            // 시뮬레이션 손은 잡는 별이 놓인 거리에서 시작한다.
+            m_SimDepth = config.ActiveStarZone.distance;
+#endif
         }
 
         public HandState Get(HandSide side)
@@ -306,12 +310,15 @@ namespace Constellation
         // 헤드셋 없이 흐름을 확인하기 위한 것. 빌드에는 들어가지 않는다.
         //   마우스 이동: 오른손 위치      마우스 왼쪽 버튼: 핀치
         //   휠: 손까지의 거리            H: 손 숨기기/보이기(기본은 보임)
+        //   화살표 키 또는 마우스 가운데 버튼 드래그: 둘러보기(헤드셋이 없을 때만)
         //   Space(누르고 있기) 또는 마우스 오른쪽 클릭: 왼손 꺼짐→떨어짐→모음 순환   Z: 되돌리기(GestureDetector가 처리)
         bool m_SimHandVisible = true; // 에디터에서는 기본으로 켜 둔다(H로 끄기)
         bool m_SimWarned;
         int m_SimBothMode;
         float m_SimLogTime;
         float m_SimDepth = 0.5f;
+        float m_SimYaw;
+        float m_SimPitch;
 
         bool SimulateHands()
         {
@@ -334,6 +341,8 @@ namespace Constellation
             }
             if (!m_SimHandVisible)
                 return false;
+
+            SimulateLook(keyboard, mouse);
 
             float scroll = mouse.scroll.ReadValue().y;
             if (Mathf.Abs(scroll) > 0.01f)
@@ -360,6 +369,33 @@ namespace Constellation
             else
                 left.ClearTracking();
             return true;
+        }
+
+        // 헤드셋 없이도 위쪽 별을 볼 수 있게 리그를 돌린다. 헤드셋이 연결되어 있으면 건드리지 않는다.
+        void SimulateLook(Keyboard keyboard, Mouse mouse)
+        {
+            if (m_Origin == null || UnityEngine.XR.XRSettings.isDeviceActive)
+                return;
+
+            float yaw = 0f;
+            float pitch = 0f;
+            float keyStep = 60f * Time.unscaledDeltaTime;
+            if (keyboard.leftArrowKey.isPressed) yaw -= keyStep;
+            if (keyboard.rightArrowKey.isPressed) yaw += keyStep;
+            if (keyboard.upArrowKey.isPressed) pitch += keyStep;
+            if (keyboard.downArrowKey.isPressed) pitch -= keyStep;
+            if (mouse.middleButton.isPressed)
+            {
+                Vector2 delta = mouse.delta.ReadValue();
+                yaw += delta.x * 0.15f;
+                pitch += delta.y * 0.15f;
+            }
+            if (yaw == 0f && pitch == 0f)
+                return;
+
+            m_SimYaw += yaw;
+            m_SimPitch = Mathf.Clamp(m_SimPitch + pitch, -60f, 80f);
+            m_Origin.rotation = Quaternion.Euler(-m_SimPitch, m_SimYaw, 0f);
         }
 
         void FillSimulatedHand(HandState state, Vector3 point, bool pinching)
