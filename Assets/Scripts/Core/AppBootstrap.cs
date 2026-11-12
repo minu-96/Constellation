@@ -77,6 +77,9 @@ namespace Constellation
             AudioManager audioManager = Create<AudioManager>("Audio Manager");
             audioManager.Init(config, headCamera.transform);
 
+            KeywordSky keywordSky = Create<KeywordSky>("Keyword Sky");
+            keywordSky.Init(config, headCamera.transform);
+
             SharedSky sharedSky = Create<SharedSky>("Shared Sky");
             sharedSky.Init(config, headCamera.transform);
 
@@ -99,6 +102,7 @@ namespace Constellation
             session.resultView = resultView;
             session.cardService = cardService;
             session.sharedSky = sharedSky;
+            session.keywordSky = keywordSky;
             session.audioManager = audioManager;
             session.Begin();
 
