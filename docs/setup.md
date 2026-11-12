@@ -88,6 +88,10 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 손 표시 | `pinchHintRange` (빛이 모이기 시작하는 거리) | 0.06 m |
 | 손 표시 | `handColor`, `thumbTipColor`, `indexTipColor` | 민트, 분홍, 연두 |
 | 소리 | `pinchVolume` | 0.3 |
+| 소리 | `enableNatureAmbience`, `natureVolume` | 켬, 0.6 |
+| 소리 | `cricketsVolume`, `windVolume`, `waterVolume` | 0.8, 0.55, 0.35 |
+| 소리 | `ambientVolume`, `ambientDuckedVolume`, `effectVolume` | 0.35, 0.12, 0.7 |
+| 소리 | `cricketsClip`, `windClip`, `waterClip` | 비어 있음(코드로 만든 소리 사용) |
 | 양손 모으기 | `handsTogetherDistance` / `handsTogetherReleaseDistance` | 0.11 / 0.2 m |
 | 양손 모으기 | `handsTogetherHoldSeconds` | 0.7초 |
 | 되돌리기 | `undoGesture` | PalmSwipe (다른 선택지: MiddlePinch) |
@@ -129,6 +133,14 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 - 어린이는 팔이 짧다. `distance`를 0.35~0.40으로 줄여 확인한다.
 - 구역을 좁히면 별 사이가 가까워져 옆 별이 잡히기 쉽다. 그럴 때는 `candidateStarCount`를 줄이거나 `starGrabRadius`를 줄인다.
 - 머리를 많이 움직이면(숙이거나 앉으면) 가까운 별이 능선 쪽으로 내려와 보일 수 있다. 기준은 시작 순간의 눈 위치다.
+
+### 소리
+
+환경음은 단계에 따라 크기가 바뀐다. 대기 화면에서 가장 크고, 별을 잇는 동안 조금 줄고, 결과 화면에서 가장 작다. 풀벌레와 물소리는 체험 공간 주변에 고정되어 있어 고개를 돌리면 방향이 바뀐다.
+
+- 풀벌레가 거슬리면 `cricketsVolume`을, 전체가 크면 `natureVolume`을 낮춘다.
+- 합성음이 마음에 들지 않으면 이음매 없이 반복되는 녹음 파일을 `cricketsClip`, `windClip`, `waterClip`에 넣는다. 외부 파일을 쓰면 출처와 라이선스를 문서에 적는다.
+- Unity 기본 공간음은 좌우와 거리만 표현한다. 위아래 방향감은 없다.
 
 ## 구현하면서 정한 것
 
