@@ -115,6 +115,7 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 하늘 | `enableLake`, `lakeShoreElevation` | 켬, -25° |
 | 하늘 | `skyVignette`, `skyExposure` | 0.35, 1.0 |
 | 하늘 | `enableShootingStars`, `shootingStarInterval` | 켬, 20~45초 |
+| 이야기 | `storyTone` | Folk (다른 선택지: FairyTale, Poetic, Random) |
 | 카드 | `showQrInHeadset`, `cardSeconds` | 끔, 12초 |
 | 모두의 하늘 | `enableSharedSky`, `sharedSkyMaxCount`, `sharedSkyLabelCount` | 켬, 40, 12 |
 | 모두의 하늘 | `sharedSkySize`, `sharedSkyBrightness` | 9°, 0.55 |
