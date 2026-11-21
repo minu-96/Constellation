@@ -10,14 +10,30 @@ export const KEYWORDS = Object.freeze({
 
 /**
  * 이야기 말투. 앱이 보내지 않으면 folk(옛이야기)다.
- * 값마다 (누가 이야기하는지, 어떤 분위기로 쓰는지)를 프롬프트에 넣는다.
+ * teller: 누가 이야기하는지, style: 어떻게 들려주는지, example: 말투만 참고하게 보여 주는 한 토막.
  */
 export const TONES = Object.freeze({
-  folk: { teller: "옛이야기꾼", style: "한국 옛이야기 분위기의 짧은 이야기를 씁니다. '~했대요', '~였답니다'처럼 전해 들은 말투로 맺습니다" },
-  fairy: { teller: "동화 작가", style: "어린이에게 읽어 주는 따뜻한 동화 분위기의 짧은 이야기를 씁니다. '~했어요'처럼 다정한 말투로 맺습니다" },
-  poetic: { teller: "시인", style: "시처럼 고요하고 여운이 남는 짧은 글을 씁니다. 꾸밈말을 아끼고 장면 하나를 그리듯 씁니다. 문장은 마침표로 끝냅니다" },
+  folk: {
+    teller: "옛이야기꾼",
+    style: "한국 옛이야기처럼 들려줍니다. '~했대요', '~였답니다'처럼 전해 들은 말로 맺습니다",
+    example: "옛날, 바닷가 작은 마을에 물동이를 이고 다니던 아이가 있었대요. 아이가 쏟은 물이 하늘로 올라가 반짝반짝 별이 되었답니다.",
+  },
+  fairy: {
+    teller: "동화 작가",
+    style: "어린이에게 읽어 주는 동화처럼 다정하게 들려줍니다. '~했어요'로 맺습니다",
+    example: "작은 다람쥐가 도토리를 들고 은하수 다리를 건너고 있었어요. 별들이 하나둘 등불을 켜 주자, 다람쥐는 무사히 집에 닿았어요.",
+  },
+  poetic: {
+    teller: "시인",
+    style: "시처럼 고요하게, 장면 하나를 그리듯 씁니다. 문장은 짧게, 마침표로 맺습니다",
+    example: "바람이 멎은 밤, 학 한 마리가 날개를 폈다. 깃 끝마다 오래된 소원이 조용히 반짝인다.",
+  },
 });
 export const DEFAULT_TONE = "folk";
+
+/** 모양 좌표(xy: [x0, y0, x1, y1, …], 0~1)로 받을 수 있는 점의 개수 */
+export const SHAPE_POINTS_MIN = 2;
+export const SHAPE_POINTS_MAX = 16;
 
 export const STAR_COUNT_MIN = 3;
 export const STAR_COUNT_MAX = 8;

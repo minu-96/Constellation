@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { IMAGE_MAX_BYTES } from "../src/rules.js";
-import { GOOD_STORY, TEST_ENV, fakeJpegBase64, goodBody, modelReply, setup, storyRequest } from "./helpers.js";
+import { GOOD_STORY, TEST_ENV, fakeKv, fakeJpegBase64, goodBody, modelReply, setup, storyRequest } from "./helpers.js";
 
 describe("요청 검증", () => {
   it.each([
@@ -8,6 +8,9 @@ describe("요청 검증", () => {
     ["키워드 누락", goodBody({ keyword: undefined })],
     ["프로토타입 속성 이름을 키워드로 보냄", goodBody({ keyword: "toString" })],
     ["허용되지 않은 말투", goodBody({ tone: "horror" })],
+    ["모양 좌표 개수가 홀수", goodBody({ xy: [0.1, 0.2, 0.3] })],
+    ["모양 좌표가 범위 밖", goodBody({ xy: [0.1, 0.2, 1.5, 0.3] })],
+    ["모양 좌표 점이 하나", goodBody({ xy: [0.1, 0.2] })],
     ["말투가 문자열이 아님", goodBody({ tone: 3 })],
     ["별 개수 2개(최소 미만)", goodBody({ starCount: 2 })],
     ["별 개수 9개(최대 초과)", goodBody({ starCount: 9 })],
@@ -141,7 +144,49 @@ describe("정상 흐름", () => {
     expect(poetic).toContain("시인");
     // 말투가 달라도 안전 문구와 형식 지시는 그대로다.
     expect(poetic).toContain("무섭거나 폭력적인 표현은 쓰지 않습니다");
-    expect(poetic).toContain('{"name":"","story":""}');
+    expect(poetic).toContain('{"looks_like":"","name":"","story":""}');
+  });
+
+  it("모양 좌표(xy)를 보내면 별 위치와 특징을 프롬프트에 넣는다", async () => {
+    const t = setup();
+    // 닫힌 삼각형: (0,0) → (1,0) → (0.5,1) → (0,0)
+    await t.send(storyRequest(goodBody({ xy: [0, 0, 1, 0, 0.5, 1, 0, 0] })));
+    const prompt = t.create.mock.calls[0][0].messages[0].content[1].text;
+    expect(prompt).toContain("[모양 정보]");
+    expect(prompt).toContain("(0,0) → (10,0) → (5,10) → (0,0)");
+    expect(prompt).toContain("닫힌 모양");
+    expect(prompt).toContain("별 3개, 선 3개");
+  });
+
+  it("모양 좌표가 없거나 빈 배열이면 모양 정보 없이 부탁한다", async () => {
+    const t = setup();
+    await t.send(storyRequest(goodBody()));
+    expect(t.create.mock.calls[0][0].messages[0].content[1].text).not.toContain("[모양 정보]");
+    const res = await t.send(storyRequest(goodBody({ xy: [] })));
+    expect(res.status).toBe(200);
+    expect(t.create.mock.calls[1][0].messages[0].content[1].text).not.toContain("[모양 정보]");
+  });
+
+  it("모양을 먼저 정하게 하고, 설명하는 말투를 피하게 한다", async () => {
+    const t = setup();
+    await t.send(storyRequest(goodBody()));
+    const params = t.create.mock.calls[0][0];
+    expect(params.output_config.format.schema.required).toEqual(["looks_like", "name", "story"]);
+    const prompt = params.messages[0].content[1].text;
+    expect(prompt).toContain("looks_like");
+    expect(prompt).toContain("상징합니다");
+    expect(prompt).toContain("입말로");
+  });
+
+  it("최근 이름을 알려 주어 겹치지 않게 한다", async () => {
+    const t = setup();
+    const CARDS = fakeKv();
+    CARDS.store.set("sky:index", JSON.stringify({ count: 2, items: [
+      { n: 1, name: "소원나무별", keyword: "wish", points: [[0, 0], [1, 1]] },
+      { n: 2, name: "바람길별", keyword: "adventure", points: [[0, 0], [1, 1]] },
+    ] }));
+    await t.send(storyRequest(goodBody()), { ...TEST_ENV, CARDS });
+    expect(t.create.mock.calls[0][0].messages[0].content[1].text).toContain("최근 다른 사람들이 받은 이름: 소원나무별, 바람길별");
   });
 
   it("모델명 환경 변수가 없으면 claude-haiku-5-5를 쓴다", async () => {

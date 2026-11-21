@@ -1,5 +1,5 @@
 import {
-  KEYWORDS, TONES, DEFAULT_TONE, STAR_COUNT_MIN, STAR_COUNT_MAX, IMAGE_MAX_BYTES,
+  KEYWORDS, TONES, DEFAULT_TONE, SHAPE_POINTS_MIN, SHAPE_POINTS_MAX, STAR_COUNT_MIN, STAR_COUNT_MAX, IMAGE_MAX_BYTES,
   NAME_MIN_CHARS, NAME_MAX_CHARS, STORY_MIN_CHARS, STORY_MAX_CHARS,
   STORY_MIN_SENTENCES, STORY_MAX_SENTENCES, BANNED_WORDS,
 } from "./rules.js";
@@ -56,7 +56,30 @@ export function validateStoryRequest(body) {
   }
   const img = validateJpegBase64(image);
   if (!img.ok) return img;
-  return { ok: true, value: { keyword, starCount, image, tone } };
+  // 모양 좌표는 선택 항목이다. 있으면 형식을 확인해 [x, y] 점들로 바꾼다.
+  let points = null;
+  // Unity의 JSON 변환은 빈 배열을 []로 보내므로 빈 배열도 "없음"으로 본다.
+  if (body.xy !== undefined && body.xy !== null && !(Array.isArray(body.xy) && body.xy.length === 0)) {
+    points = parseShapeXy(body.xy);
+    if (!points) return fail(400, "invalid_shape");
+  }
+  return { ok: true, value: { keyword, starCount, image, tone, points } };
+}
+
+/** [x0, y0, x1, y1, …](0~1)를 [[x0, y0], …]로 바꾼다. 형식이 틀리면 null. */
+export function parseShapeXy(xy) {
+  if (!Array.isArray(xy) || xy.length % 2 !== 0) return null;
+  const count = xy.length / 2;
+  if (count < SHAPE_POINTS_MIN || count > SHAPE_POINTS_MAX) return null;
+  const points = [];
+  for (let i = 0; i < xy.length; i += 2) {
+    const x = xy[i];
+    const y = xy[i + 1];
+    if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+    if (x < 0 || x > 1 || y < 0 || y > 1) return null;
+    points.push([x, y]);
+  }
+  return points;
 }
 
 /** 글자 수는 코드 포인트 기준으로 센다. */

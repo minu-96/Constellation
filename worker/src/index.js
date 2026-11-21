@@ -5,7 +5,7 @@
 import { handleCardUpload, handleCardView } from "./card.js";
 import { createAnthropicClient, requestStoryText, parseModelJson, toPositiveInt } from "./claude.js";
 import { checkToken, deviceKey, json, readJsonBody } from "./http.js";
-import { handleSkyList, handleWall } from "./sky.js";
+import { handleSkyList, handleWall, readIndex } from "./sky.js";
 import { handleTts } from "./tts.js";
 import { handleAdmin } from "./admin.js";
 import { createRateLimiter } from "./rateLimit.js";
@@ -17,6 +17,19 @@ const DEFAULT_RATE_LIMIT_PER_MINUTE = 6;
  * 의존성을 주입할 수 있는 핸들러 생성기. 테스트에서 Claude 클라이언트와 시계를 바꿔 끼운다.
  * @param {{createClient?: (env: any) => any, rateLimiter?: ReturnType<typeof createRateLimiter>, now?: () => number}} [deps]
  */
+const RECENT_NAME_COUNT = 12;
+
+async function readRecentNames(env) {
+  if (!env.CARDS) return [];
+  try {
+    const index = await readIndex(env);
+    const names = index.items.slice(-RECENT_NAME_COUNT).map((item) => item.name);
+    return [...new Set(names)];
+  } catch {
+    return [];
+  }
+}
+
 export function createHandler(deps = {}) {
   const createClient = deps.createClient ?? createAnthropicClient;
   const rateLimiter = deps.rateLimiter ?? createRateLimiter();
@@ -41,9 +54,11 @@ export function createHandler(deps = {}) {
 
     // 3. Claude 호출
     if (!env.ANTHROPIC_API_KEY) return json(500, { error: "server_misconfigured" });
+    // 최근 이름을 알려 주어 다른 사람과 같은 이름이 나오지 않게 한다(목록이 없으면 생략).
+    const recentNames = await readRecentNames(env);
     let text;
     try {
-      text = await requestStoryText(createClient(env), env, checked.value);
+      text = await requestStoryText(createClient(env), env, { ...checked.value, recentNames });
     } catch (err) {
       console.error("claude_call_failed", err?.status ?? "", err?.message ?? String(err));
       return json(502, { error: "upstream_failed" });
