@@ -56,3 +56,10 @@ Thumbs.db
 
 # 자동 촬영한 스크린샷 (Constellation > 스크린샷 찍기)
 /[Ss]creenshots/
+
+# Build by-products / local tool files
+*.symbols.zip
+*_BackUpThisFolder_ButDontShipItWithYourGame/
+*_BurstDebugInformation_DoNotShip/
+.utmp/
+.vsconfig
