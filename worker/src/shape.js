@@ -81,6 +81,40 @@ export function analyzeShape(points) {
   return { segments: n - 1, stars: unique.length, closed, width, height, sharp, bent, straight, signChanges, crossings };
 }
 
+const SKETCH_COLUMNS = 25;
+const SKETCH_ROWS = 13;
+
+/**
+ * 모양을 글자로 그린 작은 그림. 별은 o, 선은 기울기에 따라 - | / \ 로 찍는다(위쪽이 하늘 위).
+ * 글자는 세로로 길쭉하므로 가로 칸을 세로의 두 배쯤 둔다.
+ */
+export function sketchShape(points) {
+  const grid = Array.from({ length: SKETCH_ROWS }, () => new Array(SKETCH_COLUMNS).fill("."));
+  const cell = ([x, y]) => [Math.round(x * (SKETCH_COLUMNS - 1)), Math.round((1 - y) * (SKETCH_ROWS - 1))];
+  for (let i = 0; i < points.length - 1; i++) {
+    const [c0, r0] = cell(points[i]);
+    const [c1, r1] = cell(points[i + 1]);
+    // 화면 비율(가로 칸이 좁다)을 감안해 기울기 글자를 고른다.
+    const dx = (c1 - c0) / 2;
+    const dy = r0 - r1; // 위로 갈수록 +
+    let mark = "/";
+    if (Math.abs(dx) > Math.abs(dy) * 2) mark = "-";
+    else if (Math.abs(dy) > Math.abs(dx) * 2) mark = "|";
+    else if (dx * dy < 0) mark = "\\";
+    const steps = Math.max(Math.abs(c1 - c0), Math.abs(r1 - r0), 1);
+    for (let k = 1; k < steps; k++) {
+      const c = Math.round(c0 + ((c1 - c0) * k) / steps);
+      const r = Math.round(r0 + ((r1 - r0) * k) / steps);
+      if (grid[r][c] === ".") grid[r][c] = mark;
+    }
+  }
+  for (const p of points) {
+    const [c, r] = cell(p);
+    grid[r][c] = "o";
+  }
+  return grid.map((row) => row.join(""));
+}
+
 /** 프롬프트에 넣을 모양 설명 줄들. */
 export function describeShape(points) {
   const s = analyzeShape(points);
@@ -106,5 +140,7 @@ export function describeShape(points) {
   return [
     `- 이은 순서대로의 별 위치(왼쪽 아래가 (0,0), 오른쪽 위가 (10,10)): ${path}`,
     `- 특징: 별 ${s.stars}개, 선 ${s.segments}개, ${traits.join(", ")}`,
+    "- 글자로 그린 모양(o는 별, 나머지는 선, 위쪽이 하늘 위):",
+    ...sketchShape(points).map((row) => `    ${row}`),
   ];
 }
