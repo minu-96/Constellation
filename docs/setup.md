@@ -93,15 +93,15 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 소리 | `cricketsVolume`, `windVolume`, `waterVolume` | 0.8, 0.55, 0.35 |
 | 소리 | `ambientVolume`, `ambientDuckedVolume`, `effectVolume` | 0.35, 0.12, 0.7 |
 | 소리 | `cricketsClip`, `windClip`, `waterClip` | 비어 있음(코드로 만든 소리 사용) |
-| 초보 안내 | `enableGestureGuide`, `firstGuideDelaySeconds`, `pinchGuideDelaySeconds`, `finishGuideDelaySeconds` | 켬, 1.5초(처음 하는 동작), 5초(해 본 동작), 8초 |
+| 초보 안내 | `enableGestureGuide`, `firstGuideDelaySeconds`, `pinchGuideDelaySeconds`, `finishGuideDelaySeconds` | 켬, 1.5초(처음 하는 동작), 5초(해 본 동작), 5초 |
 | 결과 화면 | `choiceWaitForNarrationSeconds` | 30초: 낭독이 끝난 뒤 고르기 버튼을 띄우되, 이보다 오래 기다리지는 않는다 |
 | 초보 안내 | `missHintCount`, `grabAssistPerMiss` | 2번, 0.2 |
-| 초보 안내 | `enableFinishButton`, `finishButtonDrop`, `finishButtonRadius` | 켬, 9°, 0.06 m |
+| 초보 안내 | `enableFinishButton`, `finishButtonDrop`, `finishButtonRadius` | 끔, 9°, 0.06 m |
 | 양손 모으기 | `handsTogetherDistance` / `handsTogetherReleaseDistance` | 0.11 / 0.2 m |
 | 양손 모으기 | `handsTogetherHoldSeconds` | 0.7초 |
 | 되돌리기 | `undoGesture` | LeftPinch: 오른손으로 잇고, 왼손을 살짝 집었다 놓으면 마지막 선 취소, `clearHoldSeconds`(1.2초) 넘게 쥐면 전부 지움 (다른 선택지: PalmSwipe, MiddlePinch) |
 | 별 잇기 | `selectWhileDragging` | 켬: 핀치한 채 끌어서 놓은 별로 잇는다. 지나가는 별은 잇지 않는다. 이미 그은 구간을 다시 지나도 선은 하나만 보인다 |
-| 별 간격 | `candidateStarCount` / `starRows` / `starMinSeparation` | 42개 / 5줄 / 9도 (흔들기 `starJitter` 0.45, 너무 붙으면 다시 흔든다) |
+| 별 간격 | `candidateStarCount` / `starRows` / `starMinSeparation` | 63개 / 7줄 / 9도 (흔들기 `starJitter` 0.45, 너무 붙으면 다시 흔든다) |
 | 다시 만들기 | `enableRedoChoice` / `maxRedoCount` / `choiceTimeoutSeconds` | 켬 / 2회 / 20초: 결과 화면에서 '남기기'를 골라야 카드·모두의 하늘에 올라간다. '다시 만들기'는 올리지 않고 같은 키워드로 새 별을 뿌린다. 고르지 않으면 20초 뒤 '남기기' |
 | 되돌리기 | `undoSwipeSpeed` / `undoSwipeDistance` | 1.0 m/s / 0.22 m |
 | 손 인식 | `handCheckHoldSeconds` / `handLostGuideDelay` | 0.4 / 1.0초 |
@@ -109,9 +109,9 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 시간 | `resultSeconds` / `cardSeconds` | 14 / 20초 |
 | 시간 | `endCooldownSeconds` / `aiMinWaitSeconds` | 5 / 3초 |
 | 별 구역 | `posture` | Standing (다른 선택지: Seated, Custom) |
-| 별 구역 | `standingZone` (고도, 좌우, 거리) | +10°~+45°, ±90°, 0.45 m |
-| 별 구역 | `seatedZone` (고도, 좌우, 거리) | +10°~+40°, ±90°, 0.40 m |
-| 별 구역 | `ridgeMaxElevation`, `starRidgeMargin` | 8°, 2° |
+| 별 구역 | `standingZone` (고도, 좌우, 거리) | +8°~+55°, ±90°, 0.45 m |
+| 별 구역 | `seatedZone` (고도, 좌우, 거리) | +8°~+50°, ±90°, 0.40 m |
+| 별 구역 | `ridgeMaxElevation`, `starRidgeMargin` | 6°, 2° |
 | 별 구역 | `starRows`, `starJitter` | 4줄, 0.35 |
 | 배치 | `guideElevation`, `guideTextSize`, `resultStorySize` | -27°, 0.075 m, 0.095 m |
 | 하늘 | `enableStarDome`, `backgroundStarCount`, `backgroundStarBrightness` | 켬, 3200, 1.0 |
@@ -179,8 +179,8 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 모두의 하늘 | 카드를 올릴 때 별자리 모양을 함께 보내 서버 목록에 쌓고 번호를 매긴다. 앱은 `/sky`로 받아 먼 하늘에 그리고, 모니터는 `/wall` 페이지를 띄운다. 명세에 없던 기능 | `worker/src/sky.js`, `SharedSky.cs` |
 | F-12 저장 방식 | Worker의 `/card`가 Cloudflare KV에 30일 보관. 카드는 휴대폰에서 열리는 웹 페이지 | `worker/src/card.js` |
 | 캡처 방식 | 카메라 촬영 대신 별 좌표로 512px 그림을 직접 그림 | `CaptureService.cs` |
-| 완성 방법 | 양손 모으기(F-07)에 더해, 별을 3개 이상 이으면 별 구역 아래에 뜨는 '완성' 별을 집어도 완성된다. 한 손만 쓰는 사람과 양손 인식 실패에 대비한 것 | `FinishButton.cs` |
-| 시범 손 | 한동안 입력이 없으면 반투명한 시범 손이 핀치와 양손 모으기를 보여 준다 | `GestureGuide.cs` |
+| 완성 방법 | 소원을 빌듯이 양손을 모으면 완성된다(F-07). '완성' 별은 기본으로 끔(`enableFinishButton`). 켜면 별을 3개 이상 이었을 때 별 구역 아래에 뜨고, 집어도 완성된다 | `FinishButton.cs` |
+| 시범 손 | 한동안 입력이 없으면 반투명한 시범 손이 핀치, 끌어서 잇기, 왼손 취소, 소원을 빌듯 손바닥을 마주 모으는 동작을 보여 준다 | `GestureGuide.cs` |
 | 잡기 보조 | 연달아 빗나가면 잡기 반경을 한 번에 20%씩(최대 60%) 넓히고, 별을 잡으면 원래대로 돌린다 | `ConstellationDrawer.cs` |
 | 되돌리기 | 명세대로 선이 없으면(별 1개) 아무 일도 없음. 첫 별은 바꿀 수 없다 | `ConstellationDrawer.cs` |
 | 무입력 복귀 | KeywordSelect뿐 아니라 Drawing에도 적용 | `SessionController.cs` |
@@ -256,11 +256,11 @@ Quest는 화면을 초당 72번 그리므로 표시는 72를 넘지 않는다.
 - [ ] 키워드 화면과 별 잇기 시작 때 1.5초쯤 지나면 시범 손이 핀치를 보여 주고, 직접 집으면 사라진다.
 - [ ] 별 하나만 이은 채 3초 멈추면 옆 별로 끌어서 잇는 시범이 나온다.
 - [ ] 별 두 개를 처음 이으면 왼손으로 살짝 집는(취소) 시범이 잠깐 나온다.
-- [ ] 별 3개 이상에서 8초 동안 멈추면 '완성' 별을 집는 시범과 안내가 나온다.
+- [ ] 별 3개 이상에서 5초 동안 멈추면 소원을 빌듯 두 손을 모으는 시범과 안내가 나온다.
 - [ ] 결과 화면에서 고르기 버튼이 낭독이 끝난 뒤에 나온다. 고르지 않고 있으면 '남기기'를 집는 시범이 나온다.
 - [ ] 시범 손이 실제 손이나 별을 가려 방해되지 않는다.
-- [ ] 별을 3개 이상 이으면 아래에 '완성' 별이 뜨고, 집으면 완성된다.
-- [ ] 아래쪽 별을 잡다가 '완성' 별이 실수로 눌리지 않는다(`finishButtonDrop`).
+- [ ] 맨 위 줄(55°) 별에도 팔이 편하게 닿는다. 힘들면 `standingZone`의 `elevationMax`를 낮춘다.
+- [ ] 맨 아래 줄 별이 산 능선과 겹쳐 보이지 않는다(`ridgeMaxElevation`).
 - [ ] 일부러 두 번 빗나가면 힌트 문구가 뜨고, 그다음에는 조금 더 쉽게 잡힌다.
 
 - [ ] 손가락과 손바닥이 손처럼 읽히고, 엄지와 검지가 구분된다.

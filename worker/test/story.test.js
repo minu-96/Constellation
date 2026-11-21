@@ -13,7 +13,7 @@ describe("요청 검증", () => {
     ["모양 좌표 점이 하나", goodBody({ xy: [0.1, 0.2] })],
     ["말투가 문자열이 아님", goodBody({ tone: 3 })],
     ["별 개수 2개(최소 미만)", goodBody({ starCount: 2 })],
-    ["별 개수 9개(최대 초과)", goodBody({ starCount: 9 })],
+    ["별 개수 13개(최대 초과)", goodBody({ starCount: 13 })],
     ["별 개수가 정수가 아님", goodBody({ starCount: 4.5 })],
     ["별 개수가 문자열", goodBody({ starCount: "5" })],
     ["이미지 누락", goodBody({ image: undefined })],

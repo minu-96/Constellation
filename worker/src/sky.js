@@ -14,14 +14,14 @@ export const SKY_KEY = "sky:index";
 /** 목록에 남겨 두는 최근 별자리 수. 번호(count)는 계속 올라간다. */
 export const SKY_MAX_ITEMS = 80;
 export const POINTS_MIN = 2;
-export const POINTS_MAX = 16;
+export const POINTS_MAX = 24;
 const WALL_ITEMS = 24;
 /** 모니터에서 QR을 붙여 주는 개수(가장 최근 것부터). 방금 체험한 사람이 찍어 간다. */
 const WALL_QR_ITEMS = 3;
 const CARD_ID_RE = /^[a-z0-9]{6,32}$/;
 
 /**
- * 별자리 모양 검증. 0~1 범위의 [x, y] 점 2~16개(이은 순서, 위가 +y).
+ * 별자리 모양 검증. 0~1 범위의 [x, y] 점 2~24개(이은 순서, 위가 +y).
  * @returns {number[][] | null} 소수 셋째 자리로 다듬은 점들. 형식이 틀리면 null.
  */
 export function normalizePoints(points) {

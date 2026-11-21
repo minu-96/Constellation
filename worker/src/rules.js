@@ -33,10 +33,10 @@ export const DEFAULT_TONE = "folk";
 
 /** 모양 좌표(xy: [x0, y0, x1, y1, …], 0~1)로 받을 수 있는 점의 개수 */
 export const SHAPE_POINTS_MIN = 2;
-export const SHAPE_POINTS_MAX = 16;
+export const SHAPE_POINTS_MAX = 24;
 
 export const STAR_COUNT_MIN = 3;
-export const STAR_COUNT_MAX = 8;
+export const STAR_COUNT_MAX = 12;
 
 /** 이미지(디코딩 후 JPEG 바이트) 상한 300KB */
 export const IMAGE_MAX_BYTES = 300 * 1024;
