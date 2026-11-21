@@ -96,7 +96,50 @@ namespace Constellation
                 Debug.LogWarning("[Constellation] Resources/ConstellationConfig.asset 이 없어 기본값을 씁니다.");
                 s_Instance = CreateInstance<ConstellationConfig>();
             }
+            s_Instance.ApplyDefaultUpdates();
             return s_Instance;
+        }
+
+        // ------------------------------------------------------------------ 기본값 갱신
+        //
+        // 인스펙터에서 설정을 한 번이라도 고쳐 저장하면, Unity는 그때의 값을 모두 에셋에 적어 둔다.
+        // 그 뒤로는 코드의 기본값을 바꿔도 에셋에 적힌 옛 값이 이겨서 바뀐 내용이 반영되지 않는다.
+        // 그래서 기본값을 바꾼 항목은 판(version)을 올리고, 에셋이 옛 판이면 그 항목만 새 값으로 덮어쓴다.
+        // 덮어쓴 뒤에는 판 번호를 올려 두므로, 그다음에 인스펙터에서 고친 값은 그대로 유지된다.
+        // 기본값을 또 바꾸면 CurrentDefaultsVersion을 올리고 아래에 단계를 하나 더한다.
+
+        public const int CurrentDefaultsVersion = 2;
+
+        [Header("기본값 판 (손대지 않는다)")]
+        [Tooltip("코드가 기본값을 바꾼 항목을 에셋에 반영했는지 기억하는 번호. 직접 고치지 않는다")]
+        [SerializeField] int defaultsVersion = 0;
+
+        /// <summary>에셋이 옛 판이면 그 뒤에 바뀐 기본값을 덮어쓴다. 바꾼 것이 있으면 true.</summary>
+        public bool ApplyDefaultUpdates()
+        {
+            if (defaultsVersion >= CurrentDefaultsVersion)
+                return false;
+            int from = defaultsVersion;
+
+            if (defaultsVersion < 2)
+            {
+                // 2판: 별 구역 7줄 63개(+8°~+55°), 이을 수 있는 별 12개, '완성' 별 대신 소원을 빌듯 두 손 모으기
+                candidateStarCount = 63;
+                maxStars = 12;
+                starRows = 7;
+                ridgeMaxElevation = 6f;
+                standingZone = new StarZonePreset { elevationMin = 8f, elevationMax = 55f, azimuthHalfRange = 90f, distance = 0.45f };
+                seatedZone = new StarZonePreset { elevationMin = 8f, elevationMax = 50f, azimuthHalfRange = 90f, distance = 0.40f };
+                enableFinishButton = false;
+                finishGuideDelaySeconds = 5f;
+                msgDrawingHintCanFinish = "소원을 빌듯이 두 손을 모으거나 아래의 '완성' 별을 집으면 완성돼요";
+                msgDrawingHintHandsOnly = "소원을 빌듯이 두 손을 모으면 별자리가 완성돼요";
+                msgTooManyStars = "별은 {0}개까지 이을 수 있어요. 소원을 빌듯이 두 손을 모아 완성해 보세요";
+            }
+
+            defaultsVersion = CurrentDefaultsVersion;
+            Debug.Log("[Constellation] 설정 기본값을 " + from + "판에서 " + CurrentDefaultsVersion + "판으로 갱신했습니다(별 구역, 별 개수, 완성 방법).");
+            return true;
         }
 
         // ------------------------------------------------------------------ 품질

@@ -139,7 +139,15 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 
 중계 서버 쪽 값은 `worker/wrangler.toml`의 `[vars]`에 있다: `RATE_LIMIT_PER_MINUTE`(6), `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CARD_TTL_DAYS`.
 
-프레임이 떨어지면 `qualityTier`를 Low로 낮춘다. Low에서는 배경 별이 절반으로 줄고, 호수에 비친 별·별똥별·먼지 입자가 꺼진다. 그래도 모자라면 `enableLake`, `enableRidgeLayers`, `enableMilkyWay` 순서로 끈다.
+프레임이 떨어지면 `qualityTier`를 Low로 낮춘다.
+
+### 설정값이 바뀌지 않을 때
+
+인스펙터에서 설정을 한 번이라도 고쳐 저장하면, 그때의 값이 모두 에셋에 적혀 코드의 기본값보다 우선한다. 그래서 코드가 기본값을 바꾸면 `ConstellationConfig`의 기본값 판(`defaultsVersion`)을 올리고, 에셋이 옛 판이면 바뀐 항목만 새 값으로 덮어쓴다. 에디터를 열 때 자동으로 저장되고, 빌드에서도 실행할 때 적용된다.
+
+- 덮어쓰는 것은 그 판에서 기본값이 바뀐 항목뿐이다. 다른 항목에서 직접 고친 값은 그대로 남는다.
+- 판이 올라간 뒤에 같은 항목을 인스펙터에서 다시 고치면 그 값이 유지된다.
+- `defaultsVersion`은 직접 고치지 않는다. Low에서는 배경 별이 절반으로 줄고, 호수에 비친 별·별똥별·먼지 입자가 꺼진다. 그래도 모자라면 `enableLake`, `enableRidgeLayers`, `enableMilkyWay` 순서로 끈다.
 
 ### URP 후처리 켜 보기
 

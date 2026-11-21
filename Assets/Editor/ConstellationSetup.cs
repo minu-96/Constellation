@@ -65,6 +65,13 @@ namespace Constellation.EditorTools
                 AssetDatabase.CreateAsset(config, k_ConfigPath);
             }
 
+            // 코드가 기본값을 바꾼 항목을 에셋에도 반영해, 인스펙터와 빌드가 새 값을 쓰게 한다.
+            if (config.ApplyDefaultUpdates())
+            {
+                EditorUtility.SetDirty(config);
+                AssetDatabase.SaveAssetIfDirty(config);
+            }
+
             if (config.fallbackStoriesJson == null)
             {
                 TextAsset json = AssetDatabase.LoadAssetAtPath<TextAsset>(k_FallbackPath);
