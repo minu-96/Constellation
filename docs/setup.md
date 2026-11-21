@@ -93,7 +93,8 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 소리 | `cricketsVolume`, `windVolume`, `waterVolume` | 0.8, 0.55, 0.35 |
 | 소리 | `ambientVolume`, `ambientDuckedVolume`, `effectVolume` | 0.35, 0.12, 0.7 |
 | 소리 | `cricketsClip`, `windClip`, `waterClip` | 비어 있음(코드로 만든 소리 사용) |
-| 초보 안내 | `enableGestureGuide`, `pinchGuideDelaySeconds`, `finishGuideDelaySeconds` | 켬, 5초, 8초 |
+| 초보 안내 | `enableGestureGuide`, `firstGuideDelaySeconds`, `pinchGuideDelaySeconds`, `finishGuideDelaySeconds` | 켬, 1.5초(처음 하는 동작), 5초(해 본 동작), 8초 |
+| 결과 화면 | `choiceWaitForNarrationSeconds` | 30초: 낭독이 끝난 뒤 고르기 버튼을 띄우되, 이보다 오래 기다리지는 않는다 |
 | 초보 안내 | `missHintCount`, `grabAssistPerMiss` | 2번, 0.2 |
 | 초보 안내 | `enableFinishButton`, `finishButtonDrop`, `finishButtonRadius` | 켬, 9°, 0.06 m |
 | 양손 모으기 | `handsTogetherDistance` / `handsTogetherReleaseDistance` | 0.11 / 0.2 m |
@@ -126,7 +127,8 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 | 키워드별 하늘 | `enableKeywordSky`, `keywordSkyIntensity` | 켬, 1.0 |
 | 연출 | `enableLineFlow`, `lineFlowStrength` | 켬, 0.6 |
 | 연출 | `enableCompletionEffect`, `completionStepSeconds` | 켬, 0.18초 |
-| 연출 | `enableCompletionRipple`, `enableWaterRipples` | 켬, 켬 |
+| 연출 | `enableCompletionRipple`, `enableWaterRipples`, `waterRippleInterval` | 켬, 켬, 2.5~6초: 호수 곳곳에서 저절로 물결이 인다 |
+| 연출 | `waterRipplesFollowHands` | 끔: 켜면 손이 호수 쪽을 가리킬 때도 물결이 인다 |
 | 성능 | `qualityTier` | Medium (Low / Medium / High) |
 | 성능 | `usePostProcessing`, `ambientParticleCount` | 끔(High에서만 적용), 120 |
 | 후처리 | `bloomIntensity`, `bloomThreshold`, `bloomScatter` | 0.9, 0.8, 0.65 |
@@ -196,7 +198,26 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
   - 해상도는 Game 뷰 크기를 따른다. 브로셔용은 Game 뷰를 3840×2160으로 맞추고 실행한다.
   - 촬영 중에는 마우스와 키보드 입력이 무시된다. Game 뷰를 가리거나 닫지 않는다.
   - 서버가 연결되어 있지 않으면 결과는 폴백 이야기로 찍히고 카드 화면은 건너뛴다.
-- **FPS 표시**: 설정의 `showFpsOverlay`를 켜면 시야 아래에 프레임 수, 평균 프레임 시간, 가장 느린 프레임이 뜬다. 에디터와 개발 빌드(Development Build)에서만 보인다. 72fps면 한 프레임이 13.9ms다. 전시 빌드에서는 끈다.
+- **FPS 표시**: 아래 "72fps 확인하는 법"을 본다.
+
+### 72fps 확인하는 법
+
+**방법 1: 앱 안의 FPS 표시 (가장 간단)**
+
+1. `Assets/Resources/ConstellationConfig.asset`에서 `showFpsOverlay`를 켠다.
+2. 평소처럼 Quest로 빌드해 실행한다(개발 빌드가 아니어도 된다).
+3. 시야 아래쪽에 두 줄이 뜬다.
+   - 첫 줄: `72 fps  평균 13.9 ms  최악 15.2 ms` (0.5초마다 갱신)
+   - 둘째 줄: `느린 프레임 0.4% (12 / 3000)` (켠 뒤부터 누적, 72fps를 못 지킨 프레임의 비율)
+4. 체험을 처음부터 끝까지 두세 번 돈다. 특히 별이 나타날 때, 완성 연출, 결과 화면, 오로라(모험 키워드)를 본다.
+5. 판단 기준: 첫 줄이 대부분 72 근처이고, 둘째 줄의 느린 프레임이 1% 아래면 괜찮다. 5%를 넘거나 첫 줄이 60 아래로 자주 떨어지면 `qualityTier`를 Low로 낮추고 다시 본다.
+6. **전시 빌드를 만들기 전에 반드시 `showFpsOverlay`를 끈다.**
+
+Quest는 화면을 초당 72번 그리므로 표시는 72를 넘지 않는다.
+
+**방법 2: OVR Metrics Tool (Meta 공식 도구)**
+
+앱을 다시 빌드하지 않고 어떤 앱에서나 프레임을 볼 수 있다. Meta Horizon Store(또는 Meta Quest Developer Hub)에서 OVR Metrics Tool을 설치하고, 실행해서 오버레이를 켠 뒤 Constellation을 실행하면 시야에 FPS와 GPU·CPU 사용률이 뜬다. 메뉴 이름은 버전에 따라 다를 수 있다.
 
 ## 실기기에서만 확인할 수 있는 것
 
@@ -213,7 +234,7 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 ### 밝기와 화면
 
 - [ ] 별자리가 새겨지는 순간 주변 별들이 바깥으로 차례로 반짝이며 사라지고, 배경 별이 잠깐 밝아진다.
-- [ ] 손을 지평선 아래(호수 쪽)로 내려 움직이면 그 자리에서 물결이 퍼진다. 어지럽지 않다.
+- [ ] 호수 곳곳에서 몇 초마다 저절로 물결이 일고, 먼 곳의 물결은 납작하게 보인다. 어지럽지 않다(`waterRippleInterval`).
 
 - [ ] 키워드 세 개를 각각 골랐을 때 유성우, 오로라, 반딧불이 보이고 별 잇기를 방해하지 않는다(`keywordSkyIntensity`).
 - [ ] 오로라가 잡는 별 뒤에서 너무 밝아 별이 묻히지 않는다.
@@ -232,7 +253,11 @@ Unity 쪽 값은 모두 `Assets/Resources/ConstellationConfig.asset`에 있다(�
 
 ### 손과 별 잡기
 
-- [ ] 5초쯤 가만히 있으면 시범 손이 나타나 핀치를 보여 주고, 직접 집으면 사라진다.
+- [ ] 키워드 화면과 별 잇기 시작 때 1.5초쯤 지나면 시범 손이 핀치를 보여 주고, 직접 집으면 사라진다.
+- [ ] 별 하나만 이은 채 3초 멈추면 옆 별로 끌어서 잇는 시범이 나온다.
+- [ ] 별 두 개를 처음 이으면 왼손으로 살짝 집는(취소) 시범이 잠깐 나온다.
+- [ ] 별 3개 이상에서 8초 동안 멈추면 '완성' 별을 집는 시범과 안내가 나온다.
+- [ ] 결과 화면에서 고르기 버튼이 낭독이 끝난 뒤에 나온다. 고르지 않고 있으면 '남기기'를 집는 시범이 나온다.
 - [ ] 시범 손이 실제 손이나 별을 가려 방해되지 않는다.
 - [ ] 별을 3개 이상 이으면 아래에 '완성' 별이 뜨고, 집으면 완성된다.
 - [ ] 아래쪽 별을 잡다가 '완성' 별이 실수로 눌리지 않는다(`finishButtonDrop`).
