@@ -57,10 +57,13 @@ export function createHandler(deps = {}) {
     // 최근 이름을 알려 주어 다른 사람과 같은 이름이 나오지 않게 한다(목록이 없으면 생략).
     const recentNames = await readRecentNames(env);
     let text;
+    const started = Date.now();
     try {
       text = await requestStoryText(createClient(env), env, { ...checked.value, recentNames });
+      // 응답 시간을 남겨 두어 `npx wrangler tail`로 10초 안에 오는지 볼 수 있게 한다.
+      console.log("claude_ok_ms", Date.now() - started);
     } catch (err) {
-      console.error("claude_call_failed", err?.status ?? "", err?.message ?? String(err));
+      console.error("claude_call_failed", Date.now() - started, err?.status ?? "", err?.message ?? String(err));
       return json(502, { error: "upstream_failed" });
     }
 
