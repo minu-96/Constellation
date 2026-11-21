@@ -103,7 +103,10 @@ Shader "Constellation/Sky"
             float rippleAt(float3 dir, float4 ripple)
             {
                 float age = ripple.w;
-                float distanceFromCenter = sqrt(max(2.0 - 2.0 * dot(dir, ripple.xyz), 0.0));
+                // 수면은 비스듬히 보이므로 둥근 물결이 납작한 타원으로 보인다. 멀수록(지평선에 가까울수록) 더 납작하다.
+                float3 offset = dir - ripple.xyz;
+                offset.y /= max(abs(ripple.y), 0.06);
+                float distanceFromCenter = length(offset);
                 float x = (distanceFromCenter - age * 0.12) * 55.0;
                 float envelope = exp(-x * x * 0.08) * saturate(1.0 - age / 3.0) * step(0.0, age);
                 return sin(x) * envelope;
