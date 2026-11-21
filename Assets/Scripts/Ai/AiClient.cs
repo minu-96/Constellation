@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -28,6 +29,8 @@ namespace Constellation
             public int starCount;
             public string image;
             public string tone;
+            // 별자리 모양: 0~1로 맞춘 점들을 [x0, y0, x1, y1, …]로 편 것(이은 순서). 서버가 프롬프트에 모양 설명으로 넣는다.
+            public float[] xy;
         }
 
         [Serializable]
@@ -51,11 +54,12 @@ namespace Constellation
         /// 요청을 보낸다. onDone은 성공이든 실패든 정확히 한 번 불린다(Cancel한 경우는 제외).
         /// </summary>
         /// <param name="tone">이야기 말투(folk, fairy, poetic). 서버가 프롬프트에 반영한다.</param>
-        public void Request(string keywordId, int starCount, byte[] jpeg, string tone, Action<AiResult> onDone)
+        /// <param name="shape">0~1로 맞춘 별자리 모양(이은 순서). 없으면 그림만 보낸다.</param>
+        public void Request(string keywordId, int starCount, byte[] jpeg, string tone, IList<Vector2> shape, Action<AiResult> onDone)
         {
             Cancel();
             m_RequestId++;
-            m_Running = StartCoroutine(Run(m_RequestId, keywordId, starCount, jpeg, tone, onDone));
+            m_Running = StartCoroutine(Run(m_RequestId, keywordId, starCount, jpeg, tone, shape, onDone));
         }
 
         /// <summary>진행 중인 요청을 끊는다. 콜백은 불리지 않는다.</summary>
@@ -87,7 +91,7 @@ namespace Constellation
             }
         }
 
-        IEnumerator Run(int id, string keywordId, int starCount, byte[] jpeg, string tone, Action<AiResult> onDone)
+        IEnumerator Run(int id, string keywordId, int starCount, byte[] jpeg, string tone, IList<Vector2> shape, Action<AiResult> onDone)
         {
             AiResult result = new AiResult();
             AppSecrets secrets = AppSecrets.Load();
@@ -105,6 +109,7 @@ namespace Constellation
                 StoryRequest body = new StoryRequest();
                 body.keyword = keywordId;
                 body.tone = string.IsNullOrEmpty(tone) ? "folk" : tone;
+                body.xy = FlattenShape(shape);
                 body.starCount = starCount;
                 body.image = Convert.ToBase64String(jpeg);
                 byte[] payload = Encoding.UTF8.GetBytes(JsonUtility.ToJson(body));
@@ -199,6 +204,21 @@ namespace Constellation
                     builder.Append(c);
             }
             return builder.Length >= 4 ? builder.ToString() : "quest-unknown";
+        }
+
+        // 서버는 점 2~16개만 받는다. 범위를 벗어나면 보내지 않는다(빈 배열은 서버가 "없음"으로 본다).
+        static float[] FlattenShape(IList<Vector2> shape)
+        {
+            if (shape == null || shape.Count < 2)
+                return new float[0];
+            int count = Mathf.Min(shape.Count, 16);
+            float[] xy = new float[count * 2];
+            for (int i = 0; i < count; i++)
+            {
+                xy[i * 2] = Mathf.Clamp01(shape[i].x);
+                xy[i * 2 + 1] = Mathf.Clamp01(shape[i].y);
+            }
+            return xy;
         }
     }
 }
