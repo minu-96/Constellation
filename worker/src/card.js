@@ -287,7 +287,18 @@ const SAVE_SCRIPT = `
     }
     if (keyword) { c.font = "400 30px " + FONT; c.fillStyle = "#c9c3f0"; c.fillText(keyword, W / 2, y0); }
 
-    var image = document.getElementById("image"), size = 560, top = 250, left = (W - size) / 2;
+    // 이야기 길이에 맞춰 그림 크기와 글자 크기를 정한다(날짜 줄과 겹치지 않게).
+    var story = text("story"), top = 250, bottom = H - 210, maxText = W - 280;
+    var fonts = [[38, 58], [34, 52], [31, 47], [28, 42]], pick = null;
+    for (var f = 0; f < fonts.length; f++) {
+      c.font = "400 " + fonts[f][0] + "px " + FONT;
+      var ls = wrap(c, story, maxText), lh = fonts[f][1];
+      var fit = bottom - top - 205 - (ls.length - 1) * lh - lh / 2;
+      pick = { font: fonts[f][0], lh: lh, lines: ls, size: Math.min(560, fit) };
+      if (pick.size >= 380) break;
+    }
+    var size = Math.max(260, pick.size), left = (W - size) / 2;
+    var image = document.getElementById("image");
     c.fillStyle = "rgba(255, 224, 150, 0.5)"; roundRect(c, left - 10, top - 10, size + 20, size + 20, 44); c.fill();
     if (image && image.complete && image.naturalWidth) {
       c.save(); roundRect(c, left, top, size, size, 36); c.clip(); c.drawImage(image, left, top, size, size); c.restore();
@@ -297,9 +308,9 @@ const SAVE_SCRIPT = `
     c.fillText(text("name"), W / 2, top + size + 95); c.shadowBlur = 0;
     c.fillRect(W / 2 - 60, top + size + 150, 120, 2);
 
-    c.fillStyle = "#f5f2ff"; c.font = "400 38px " + FONT;
-    var lines = wrap(c, text("story"), W - 300), lineY = top + size + 205;
-    for (var k = 0; k < lines.length && k < 6; k++) c.fillText(lines[k], W / 2, lineY + k * 58);
+    c.fillStyle = "#f5f2ff"; c.font = "400 " + pick.font + "px " + FONT;
+    var lineY = top + size + 205, maxLines = Math.floor((bottom - lineY) / pick.lh) + 1;
+    for (var k = 0; k < pick.lines.length && k < maxLines; k++) c.fillText(pick.lines[k], W / 2, lineY + k * pick.lh);
 
     c.font = "400 26px " + FONT; c.fillStyle = "#a8a2d6"; c.fillText(text("date"), W / 2, H - 165);
     c.fillStyle = "#8f89bd"; c.fillText("Constellation · One star, One story", W / 2, H - 120);
