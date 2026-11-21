@@ -206,12 +206,12 @@ namespace Constellation
             return builder.Length >= 4 ? builder.ToString() : "quest-unknown";
         }
 
-        // 서버는 점 2~16개만 받는다. 범위를 벗어나면 보내지 않는다(빈 배열은 서버가 "없음"으로 본다).
+        // 서버는 점 2~24개만 받는다(별 12개, 같은 별을 다시 지나는 선 포함). 범위를 벗어나면 보내지 않는다(빈 배열은 서버가 "없음"으로 본다).
         static float[] FlattenShape(IList<Vector2> shape)
         {
             if (shape == null || shape.Count < 2)
                 return new float[0];
-            int count = Mathf.Min(shape.Count, 16);
+            int count = Mathf.Min(shape.Count, 24);
             float[] xy = new float[count * 2];
             for (int i = 0; i < count; i++)
             {

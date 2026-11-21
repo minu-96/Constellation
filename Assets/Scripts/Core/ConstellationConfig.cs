@@ -65,7 +65,7 @@ namespace Constellation
     {
         [Tooltip("아래쪽 한계(도). 눈높이가 0, 위가 +")]
         public float elevationMin = 10f;
-        [Tooltip("위쪽 한계(도). 45도를 넘으면 45도로 자른다")]
+        [Tooltip("위쪽 한계(도). 55도를 넘으면 55도로 자른다")]
         public float elevationMax = 35f;
         [Tooltip("좌우로 퍼지는 각도의 절반(도)")]
         public float azimuthHalfRange = 55f;
@@ -183,11 +183,11 @@ namespace Constellation
 
         [Header("별 (확정)")]
         [Tooltip("하늘에 뿌리는 후보 별 개수")]
-        public int candidateStarCount = 42;
+        public int candidateStarCount = 63;
         [Tooltip("완성에 필요한 최소 별 개수")]
         public int minStars = 3;
         [Tooltip("이을 수 있는 최대 별 개수")]
-        public int maxStars = 8;
+        public int maxStars = 12;
 
         [Header("키워드 (확정, 문구와 색은 조정 가능)")]
         public KeywordDefinition[] keywords =
@@ -247,13 +247,13 @@ namespace Constellation
         [Tooltip("이 시간 동안 아무것도 집지 않으면 핀치 시범을 보여 준다(초)")]
         public float pinchGuideDelaySeconds = 5f;
         [Tooltip("별을 충분히 이은 뒤 이 시간 동안 완성하지 않으면 양손 모으기 시범을 보여 준다(초)")]
-        public float finishGuideDelaySeconds = 8f;
+        public float finishGuideDelaySeconds = 5f;
         [Tooltip("연달아 이 횟수만큼 빗나가면 힌트 문구를 띄운다")]
         public int missHintCount = 2;
         [Tooltip("빗나갈 때마다 잡기 반경을 이 비율만큼 넓혀 준다(최대 3번, 별을 잡으면 원래대로). 0이면 끈다")]
         [Range(0f, 0.5f)] public float grabAssistPerMiss = 0.2f;
         [Tooltip("별을 충분히 이으면 '완성' 별을 띄운다. 집으면 양손 모으기 없이 완성된다(한 손 사용, 양손 인식 실패 대비)")]
-        public bool enableFinishButton = true;
+        public bool enableFinishButton = false;
         [Tooltip("'완성' 별을 별 구역 아래로 얼마나 내려 둘지(도)")]
         public float finishButtonDrop = 9f;
         [Tooltip("'완성' 별의 잡기 반경(m)")]
@@ -316,17 +316,17 @@ namespace Constellation
         [Tooltip("체험 자세. Standing/Seated는 아래 프리셋을, Custom은 customZone을 쓴다")]
         public PlayPosture posture = PlayPosture.Standing;
         [Tooltip("서서 하는 경우")]
-        public StarZonePreset standingZone = new StarZonePreset { elevationMin = 10f, elevationMax = 45f, azimuthHalfRange = 90f, distance = 0.45f };
+        public StarZonePreset standingZone = new StarZonePreset { elevationMin = 8f, elevationMax = 55f, azimuthHalfRange = 90f, distance = 0.45f };
         [Tooltip("앉아서 하는 경우. 덜 뻗고 덜 올려도 닿게 한다")]
-        public StarZonePreset seatedZone = new StarZonePreset { elevationMin = 10f, elevationMax = 40f, azimuthHalfRange = 90f, distance = 0.40f };
+        public StarZonePreset seatedZone = new StarZonePreset { elevationMin = 8f, elevationMax = 50f, azimuthHalfRange = 90f, distance = 0.40f };
         [Tooltip("직접 정하는 경우")]
         public StarZonePreset customZone = new StarZonePreset();
         [Tooltip("능선(산 실루엣)의 최고 높이(도). 잡는 별은 이보다 위에만 놓는다")]
-        public float ridgeMaxElevation = 8f;
+        public float ridgeMaxElevation = 6f;
         [Tooltip("능선과 잡는 별 사이에 두는 여유(도)")]
         public float starRidgeMargin = 2f;
         [Tooltip("별을 놓는 줄 수. 한 줄의 칸 수는 후보 별 개수에서 정해진다")]
-        [Range(1, 6)] public int starRows = 5;
+        [Range(1, 9)] public int starRows = 7;
         [Tooltip("별과 별 사이의 최소 각도(도). 너무 붙어서 한 번에 여러 개가 잡히지 않게 한다")]
         [Range(0f, 20f)] public float starMinSeparation = 9f;
         [Tooltip("칸 안에서 별을 흔드는 정도(0이면 반듯한 격자, 클수록 불규칙). 크면 별끼리 가까워진다")]
@@ -384,14 +384,14 @@ namespace Constellation
         public string msgKeywordQuestion = "어떤 별자리를 만들까요?";
         public string msgKeywordHint = "엄지와 검지로 하나를 집어 보세요";
         public string msgDrawingHint = "엄지와 검지로 별을 집어 이어 보세요";
-        public string msgDrawingHintCanFinish = "두 손을 모으거나 아래의 '완성' 별을 집으면 완성돼요";
+        public string msgDrawingHintCanFinish = "소원을 빌듯이 두 손을 모으거나 아래의 '완성' 별을 집으면 완성돼요";
         [Tooltip("'완성' 별을 껐을 때 쓰는 문구")]
-        public string msgDrawingHintHandsOnly = "두 손을 모으면 별자리가 완성돼요";
+        public string msgDrawingHintHandsOnly = "소원을 빌듯이 두 손을 모으면 별자리가 완성돼요";
         public string msgMissHint = "별에 손끝을 더 가까이 대고 집어 보세요";
         public string msgFinishLabel = "완성";
         public string msgNeedMoreStars = "별을 더 이어주세요";
         [Tooltip("{0} 자리에 최대 별 개수가 들어간다")]
-        public string msgTooManyStars = "별은 {0}개까지 이을 수 있어요. 두 손을 모아 완성해 보세요";
+        public string msgTooManyStars = "별은 {0}개까지 이을 수 있어요. 소원을 빌듯이 두 손을 모아 완성해 보세요";
         public string msgUndoHintSwipe = "손바닥을 옆으로 쓸면 마지막 별을 지워요";
         public string msgUndoHintMiddlePinch = "엄지와 중지를 맞대면 마지막 별을 지워요";
         public string msgUndoHintLeftPinch = "왼손으로 살짝 집으면 마지막 선이, 길게 쥐면 전부 지워져요";
@@ -514,8 +514,8 @@ namespace Constellation
         [Tooltip("상태 전환을 콘솔에 남긴다")]
         public bool logStateChanges = true;
 
-        /// <summary>잡는 별의 고도 상한. 고개를 크게 젖히지 않게 이보다 위에는 두지 않는다.</summary>
-        public const float StarElevationHardMax = 45f;
+        /// <summary>잡는 별의 고도 상한. 세로로 긴 모양도 그릴 수 있게 넓히되, 고개를 크게 젖히지 않게 이보다 위에는 두지 않는다.</summary>
+        public const float StarElevationHardMax = 55f;
 
         readonly StarZonePreset m_ActiveZone = new StarZonePreset();
 

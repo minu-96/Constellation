@@ -500,7 +500,7 @@ namespace Constellation
             {
                 ReleaseCapture();
                 System.Collections.Generic.List<Vector2> projected = starField.GetProjectedPoints(drawer.SelectedIndices);
-                m_Shape = SharedSky.NormalizePoints(projected, 16);
+                m_Shape = SharedSky.NormalizePoints(projected, 24);
                 ok = capture.TryCapture(projected, out m_CaptureJpeg, out m_CaptureTexture);
             }
             catch (Exception e)
