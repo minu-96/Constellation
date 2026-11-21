@@ -7,7 +7,7 @@ namespace Constellation
     ///  - 핀치: 목표(키워드 아이콘이나 별) 앞에서 엄지와 검지를 맞댔다 뗀다.
     ///  - 끌어서 잇기: 별을 집은 채 다음 별까지 옮겨 가서 놓는다.
     ///  - 왼손 취소: 왼손으로 살짝 집었다 놓는다.
-    ///  - 양손 모으기: 두 손이 벌어졌다 모인다.
+    ///  - 양손 모으기: 소원을 빌듯이 손바닥을 마주 보게 세운 두 손이 가운데로 모인다.
     /// 언제 보여 줄지는 SessionController가 정한다(한동안 입력이 없을 때).
     /// </summary>
     public class GestureGuide : MonoBehaviour
@@ -137,13 +137,14 @@ namespace Constellation
             else
             {
                 float t = (m_Time % k_TogetherCycle) / k_TogetherCycle;
-                // 벌어져 있다가 모이고, 모은 채 잠깐 머문다.
+                // 소원을 빌듯이: 손바닥이 서로 마주 보게 세운 두 손이 가운데로 모여 잠깐 머문다.
                 float together = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.15f) / 0.35f)) * (1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.85f) / 0.15f)));
-                float spread = Mathf.Lerp(0.2f, 0.02f, together);
-                // 엄지·검지 가운데가 기준점이라, 손바닥이 가운데로 오도록 살짝 올린다.
-                Vector3 center = m_Target + Vector3.up * 0.05f;
-                HandPose.Fill(m_Right, center + right * (spread + 0.047f), right, Vector3.up, forward, 0f, false);
-                HandPose.Fill(m_Left, center - right * (spread + 0.047f), right, Vector3.up, forward, 0f, true);
+                float spread = Mathf.Lerp(0.16f, 0.012f, together);
+                // HandPose의 기준점(엄지·검지 끝 가운데)은 손바닥보다 손끝 쪽에 있으므로, 손바닥이 가운데 오도록 살짝 올린다.
+                Vector3 center = m_Target + Vector3.up * 0.08f;
+                // 오른손: 손등이 오른쪽, 엄지가 체험자 쪽. 왼손은 그 거울.
+                HandPose.Fill(m_Right, center + right * spread, forward, Vector3.up, right, 0f, false);
+                HandPose.Fill(m_Left, center - right * spread, -forward, Vector3.up, -right, 0f, true);
             }
         }
     }
