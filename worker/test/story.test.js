@@ -144,7 +144,7 @@ describe("정상 흐름", () => {
     expect(poetic).toContain("시인");
     // 말투가 달라도 안전 문구와 형식 지시는 그대로다.
     expect(poetic).toContain("무섭거나 폭력적인 표현은 쓰지 않습니다");
-    expect(poetic).toContain('{"looks_like":"","name":"","story":""}');
+    expect(poetic).toContain('{"candidates":["","",""],"looks_like":"","name":"","story":""}');
   });
 
   it("모양 좌표(xy)를 보내면 별 위치와 특징을 프롬프트에 넣는다", async () => {
@@ -155,6 +155,7 @@ describe("정상 흐름", () => {
     expect(prompt).toContain("[모양 정보]");
     expect(prompt).toContain("(0,0) → (10,0) → (5,10) → (0,0)");
     expect(prompt).toContain("닫힌 모양");
+    expect(prompt).toContain("글자로 그린 모양");
     expect(prompt).toContain("별 3개, 선 3개");
   });
 
@@ -171,9 +172,12 @@ describe("정상 흐름", () => {
     const t = setup();
     await t.send(storyRequest(goodBody()));
     const params = t.create.mock.calls[0][0];
-    expect(params.output_config.format.schema.required).toEqual(["looks_like", "name", "story"]);
+    expect(params.output_config.format.schema.required).toEqual(["candidates", "looks_like", "name", "story"]);
     const prompt = params.messages[0].content[1].text;
     expect(prompt).toContain("looks_like");
+    expect(prompt).toContain("candidates");
+    expect(prompt).toContain("정확히 맞을 필요는 없습니다");
+    expect(prompt).toContain("피할 예");
     expect(prompt).toContain("상징합니다");
     expect(prompt).toContain("입말로");
   });

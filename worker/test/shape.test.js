@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzeShape, describeShape } from "../src/shape.js";
+import { analyzeShape, describeShape, sketchShape } from "../src/shape.js";
 
 describe("analyzeShape", () => {
   it("닫힌 삼각형", () => {
@@ -33,5 +33,24 @@ describe("analyzeShape", () => {
 
   it("좌표는 0~10 격자로 보여 준다", () => {
     expect(describeShape([[0, 0], [0.54, 1]])[0]).toContain("(0,0) → (5,10)");
+  });
+});
+
+describe("sketchShape", () => {
+  it("별은 o, 세로선은 |, 가로선은 - 로 그린다", () => {
+    // 아래에서 위로 곧게 올라갔다가 오른쪽으로 꺾이는 모양
+    const rows = sketchShape([[0, 0], [0, 1], [1, 1]]);
+    expect(rows).toHaveLength(13);
+    expect(rows.every((row) => row.length === 25)).toBe(true);
+    expect(rows[0]).toBe("o" + "-".repeat(23) + "o");
+    expect(rows[12][0]).toBe("o");
+    expect(rows[6][0]).toBe("|");
+  });
+
+  it("오른쪽 위로 가는 선은 /, 오른쪽 아래로 가는 선은 \\", () => {
+    const up = sketchShape([[0, 0], [1, 1]]).join("");
+    const down = sketchShape([[0, 1], [1, 0]]).join("");
+    expect(up).toContain("/");
+    expect(down).toContain("\\");
   });
 });
