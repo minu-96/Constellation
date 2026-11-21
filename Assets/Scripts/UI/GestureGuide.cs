@@ -5,6 +5,8 @@ namespace Constellation
     /// <summary>
     /// 처음 쓰는 사람에게 손 모양을 시범으로 보여 준다. 반투명한 시범 손이 동작을 되풀이한다.
     ///  - 핀치: 목표(키워드 아이콘이나 별) 앞에서 엄지와 검지를 맞댔다 뗀다.
+    ///  - 끌어서 잇기: 별을 집은 채 다음 별까지 옮겨 가서 놓는다.
+    ///  - 왼손 취소: 왼손으로 살짝 집었다 놓는다.
     ///  - 양손 모으기: 두 손이 벌어졌다 모인다.
     /// 언제 보여 줄지는 SessionController가 정한다(한동안 입력이 없을 때).
     /// </summary>
@@ -14,6 +16,8 @@ namespace Constellation
         {
             None,
             Pinch,
+            Drag,
+            LeftTap,
             HandsTogether
         }
 
@@ -22,10 +26,13 @@ namespace Constellation
         HandState m_Left;
         Demo m_Demo = Demo.None;
         Vector3 m_Target;
+        Vector3 m_DragTo;
         float m_Time;
 
         const float k_PinchCycle = 2.0f;
         const float k_TogetherCycle = 2.4f;
+        const float k_DragCycle = 2.8f;
+        const float k_TapCycle = 1.4f;
 
         public bool IsShowing { get { return m_Demo != Demo.None; } }
 
@@ -43,6 +50,25 @@ namespace Constellation
                 m_Time = 0f;
             m_Demo = Demo.Pinch;
             m_Target = target;
+        }
+
+        /// <summary>from의 별을 집어 to의 별까지 끌고 가서 놓는 시범을 되풀이한다.</summary>
+        public void ShowDrag(Vector3 from, Vector3 to)
+        {
+            if (m_Demo != Demo.Drag)
+                m_Time = 0f;
+            m_Demo = Demo.Drag;
+            m_Target = from;
+            m_DragTo = to;
+        }
+
+        /// <summary>왼손으로 살짝 집었다 놓는 시범(마지막 선 취소)을 되풀이한다.</summary>
+        public void ShowLeftTap(Vector3 point)
+        {
+            if (m_Demo != Demo.LeftTap)
+                m_Time = 0f;
+            m_Demo = Demo.LeftTap;
+            m_Target = point;
         }
 
         /// <summary>주어진 위치를 가운데로 두 손을 모으는 시범을 되풀이한다.</summary>
@@ -88,6 +114,25 @@ namespace Constellation
                 Vector3 point = m_Target - forward * (0.05f * (1f - approach));
                 HandPose.Fill(m_Right, point, right, Vector3.up, forward, pinch, false);
                 m_Left.ClearTracking();
+            }
+            else if (m_Demo == Demo.Drag)
+            {
+                float t = (m_Time % k_DragCycle) / k_DragCycle;
+                // 첫 별에 다가가 집고 → 집은 채 다음 별로 옮겨 가고 → 놓고 → 잠깐 쉰다.
+                float approach = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.15f));
+                float pinch = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.15f) / 0.08f)) * (1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.72f) / 0.08f)));
+                float move = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.25f) / 0.42f));
+                Vector3 point = Vector3.Lerp(m_Target, m_DragTo, move) - forward * (0.05f * (1f - approach));
+                HandPose.Fill(m_Right, point, right, Vector3.up, forward, pinch, false);
+                m_Left.ClearTracking();
+            }
+            else if (m_Demo == Demo.LeftTap)
+            {
+                float t = (m_Time % k_TapCycle) / k_TapCycle;
+                // 짧게 집었다 바로 놓는다.
+                float pinch = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.3f) / 0.1f)) * (1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.5f) / 0.1f)));
+                HandPose.Fill(m_Left, m_Target, right, Vector3.up, forward, pinch, true);
+                m_Right.ClearTracking();
             }
             else
             {

@@ -121,7 +121,8 @@ namespace Constellation
             session.audioManager = audioManager;
             session.Begin();
 
-            if (config.showFpsOverlay && (Application.isEditor || Debug.isDebugBuild))
+            // 기기에서 프레임을 확인할 수 있게 일반 빌드에서도 띄운다. 전시 빌드에서는 설정에서 끈다.
+            if (config.showFpsOverlay)
                 Create<FpsOverlay>("FPS Overlay").Init(config, headCamera.transform);
 
 #if UNITY_EDITOR

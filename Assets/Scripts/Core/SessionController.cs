@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Constellation
@@ -54,6 +55,13 @@ namespace Constellation
         bool m_AiDone;
         // 결과 화면의 고르기: 버튼을 띄웠는지, 이번 체험에서 다시 만든 횟수
         bool m_ChoiceShown;
+        // 낭독이 조용해진 시각(고르기 버튼은 낭독이 끝나고 잠시 뒤에 띄운다)
+        float m_NarrationQuietSince = -1f;
+        // 튜토리얼: 이번 체험에서 이미 해낸 동작(해낸 동작은 시범을 늦게 보여 준다)
+        bool m_DidPinchKeyword;
+        bool m_DidDrag;
+        bool m_ShowedUndoDemo;
+        float m_UndoDemoUntil;
         float m_ChoiceShownTime;
         int m_RedoCount;
         bool m_CardQrShown;
@@ -220,6 +228,7 @@ namespace Constellation
                     starField.RaiseToSky(true);
                     resultView.Show(m_ResultName, m_ResultStory, m_AnchorPosition, m_AnchorRotation);
                     m_ChoiceShown = false;
+                    m_NarrationQuietSince = -1f;
                     // 고르기를 쓰지 않으면 예전처럼 바로 올린다. 쓰면 '남기기'를 고른 뒤에 올린다(다시 만들면 올리지 않는다).
                     if (!config.enableRedoChoice)
                         cardService.Prepare(m_Keyword.id, m_ResultName, m_ResultStory, m_CaptureJpeg, m_Shape);
@@ -265,6 +274,7 @@ namespace Constellation
                 case SessionState.Result:
                     confirmButton.Hide();
                     redoButton.Hide();
+                    gestureGuide.Hide();
                     break;
 
                 case SessionState.Card:
@@ -344,7 +354,9 @@ namespace Constellation
             }
 
             // 한동안 아무것도 집지 않으면 가운데 아이콘 앞에서 핀치 시범을 보여 준다.
-            if (config.enableGestureGuide && hands.AnyHandTracked && Now - m_LastActivityTime >= config.pinchGuideDelaySeconds && keywordSelector.OrbCount > 0)
+            // 처음에는 짧게 기다렸다 바로 보여 준다.
+            float keywordDelay = m_DidPinchKeyword ? config.pinchGuideDelaySeconds : config.firstGuideDelaySeconds;
+            if (config.enableGestureGuide && hands.AnyHandTracked && Now - m_LastActivityTime >= keywordDelay && keywordSelector.OrbCount > 0)
                 gestureGuide.ShowPinch(keywordSelector.GetOrbPosition(keywordSelector.OrbCount / 2) + Vector3.up * 0.09f);
             else
                 gestureGuide.Hide();
@@ -363,6 +375,11 @@ namespace Constellation
         }
 
         // 별 잇기에서의 시범: 아직 하나도 못 이었으면 핀치를, 충분히 잇고도 완성하지 않으면 양손 모으기를 보여 준다.
+        // 별 잇기 튜토리얼. 체험자가 막 해야 할 동작 하나만 반투명 시범 손으로 보여 준다.
+        //  1) 아직 별이 없으면: 정면 별을 집는 시범(처음에는 1.5초 만에)
+        //  2) 별이 하나뿐이면: 그 별에서 옆 별로 끌어서 잇는 시범
+        //  3) 별 두 개를 처음 이었을 때: 왼손으로 살짝 집어 취소하는 시범을 한 번 짧게
+        //  4) 완성할 수 있으면: '완성' 별을 집는 시범(완성 별을 껐으면 양손 모으기)
         void UpdateDrawingGuide()
         {
             if (!config.enableGestureGuide || !hands.AnyHandTracked)
@@ -371,22 +388,87 @@ namespace Constellation
                 return;
             }
 
-            if (m_StarCount == 0 && Now - m_LastActivityTime >= config.pinchGuideDelaySeconds)
+            float idle = Now - m_LastActivityTime;
+            float firstDelay = config.firstGuideDelaySeconds;
+
+            if (Now < m_UndoDemoUntil && config.undoGesture == UndoGestureType.LeftPinch)
             {
-                int star = starField.FindNearest(ZonePoint(config.ActiveStarZone.elevationMin + 8f), 2f);
-                if (star >= 0)
+                gestureGuide.ShowLeftTap(m_AnchorPosition + m_AnchorRotation * new Vector3(-0.2f, -0.18f, config.ActiveStarZone.distance * 0.8f));
+                return;
+            }
+
+            if (m_StarCount == 0)
+            {
+                if (idle >= (drawer.SelectedIndices.Count > 0 ? config.pinchGuideDelaySeconds : firstDelay))
                 {
-                    gestureGuide.ShowPinch(starField.GetWorldPosition(star));
-                    return;
+                    int star = starField.FindNearest(ZonePoint(config.ActiveStarZone.elevationMin + 8f), 2f);
+                    if (star >= 0)
+                    {
+                        gestureGuide.ShowPinch(starField.GetWorldPosition(star));
+                        return;
+                    }
                 }
             }
-            else if (m_StarCount >= config.minStars && Now - m_LastStarTime >= config.finishGuideDelaySeconds && Now - m_LastActivityTime >= 2f)
+            else if (m_StarCount < config.minStars)
             {
-                // 시범은 '완성' 별을 가리지 않게 그보다 가깝고 낮은 곳에서 보여 준다.
-                gestureGuide.ShowHandsTogether(m_AnchorPosition + m_AnchorRotation * new Vector3(0f, -0.22f, config.ActiveStarZone.distance * 0.75f));
+                // 별이 하나뿐이고 잠시 멈춰 있으면 옆 별로 끌어서 잇는 법을 보여 준다(한 번 끌어서 이었으면 늦게).
+                float delay = m_DidDrag ? config.pinchGuideDelaySeconds : 3f;
+                if (m_StarCount == 1 && idle >= delay)
+                {
+                    IList<int> selected = drawer.SelectedIndices;
+                    int last = selected.Count > 0 ? selected[selected.Count - 1] : -1;
+                    int next = NearestUnselectedStar(last);
+                    if (last >= 0 && next >= 0)
+                    {
+                        gestureGuide.ShowDrag(starField.GetWorldPosition(last), starField.GetWorldPosition(next));
+                        return;
+                    }
+                }
+                else if (idle >= config.pinchGuideDelaySeconds)
+                {
+                    int next = NearestUnselectedStar(drawer.SelectedIndices.Count > 0 ? drawer.SelectedIndices[drawer.SelectedIndices.Count - 1] : -1);
+                    if (next >= 0)
+                    {
+                        gestureGuide.ShowPinch(starField.GetWorldPosition(next));
+                        return;
+                    }
+                }
+            }
+            else if (Now - m_LastStarTime >= config.finishGuideDelaySeconds && idle >= 2f)
+            {
+                if (config.enableFinishButton)
+                {
+                    gestureGuide.ShowPinch(finishButton.Position);
+                    guide.SetHint(config.msgFinishGuide);
+                }
+                else
+                {
+                    // 시범은 체험자 가까이 낮은 곳에서 보여 준다.
+                    gestureGuide.ShowHandsTogether(m_AnchorPosition + m_AnchorRotation * new Vector3(0f, -0.22f, config.ActiveStarZone.distance * 0.75f));
+                }
                 return;
             }
             gestureGuide.Hide();
+        }
+
+        // from 별에서 가장 가까운, 아직 잇지 않은 별. from이 없으면 정면 아래쪽 별.
+        int NearestUnselectedStar(int from)
+        {
+            Vector3 origin = from >= 0 ? starField.GetWorldPosition(from) : ZonePoint(config.ActiveStarZone.elevationMin + 8f);
+            int best = -1;
+            float bestDistance = float.MaxValue;
+            for (int i = 0; i < starField.Count; i++)
+            {
+                if (i == from || starField.IsSelected(i))
+                    continue;
+                float distance = Vector3.Distance(origin, starField.GetWorldPosition(i));
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = i;
+                }
+            }
+            return best;
         }
 
         // 체험자 정면에서 주어진 고도(도)에 있는 별 구역 위의 한 점
@@ -460,13 +542,25 @@ namespace Constellation
                 return;
             }
 
-            // 이야기가 다 나타난 뒤에 '남기기 / 다시 만들기'를 띄운다.
+            // 이야기가 다 나타나고 낭독도 끝난 뒤에 '남기기 / 다시 만들기'를 띄운다.
+            // 낭독이 없거나 실패했으면 글자가 다 나온 뒤에 띄운다. 낭독이 너무 길어지면 기다리지 않는다.
             if (!m_ChoiceShown)
             {
-                if (StateSeconds >= ResultView.RevealSeconds(m_ResultStory) + 0.8f)
+                float revealed = ResultView.RevealSeconds(m_ResultStory) + 0.8f;
+                if (narration.IsBusy || StateSeconds < ResultView.StoryDelaySeconds + 0.5f)
+                    m_NarrationQuietSince = -1f;
+                else if (m_NarrationQuietSince < 0f)
+                    m_NarrationQuietSince = Now;
+                bool narrationDone = m_NarrationQuietSince >= 0f && Now - m_NarrationQuietSince >= 0.8f;
+                bool waitedTooLong = StateSeconds >= revealed + config.choiceWaitForNarrationSeconds;
+                if (StateSeconds >= revealed && (narrationDone || waitedTooLong))
                     ShowChoice();
                 return;
             }
+
+            // 고르지 않고 있으면 '남기기'를 집는 시범을 보여 준다.
+            if (config.enableGestureGuide && hands.AnyHandTracked && Now - m_ChoiceShownTime >= 6f && Now - m_LastActivityTime >= 4f)
+                gestureGuide.ShowPinch(confirmButton.Position);
 
             // 고르지 않고 떠났거나 망설이면 '남기기'로 처리한다.
             if (Now - m_ChoiceShownTime >= config.choiceTimeoutSeconds)
@@ -584,6 +678,7 @@ namespace Constellation
             if (State != SessionState.KeywordSelect || m_Keyword != null || keyword == null)
                 return;
             m_Keyword = keyword;
+            m_DidPinchKeyword = true;
             gestureGuide.Hide();
             m_KeywordChosenTime = Now;
             m_LastActivityTime = Now;
@@ -601,6 +696,15 @@ namespace Constellation
         {
             if (State != SessionState.Drawing)
                 return;
+            // 핀치를 놓는 순간 이어졌다면(손이 이미 펴져 있다) 끌어서 이은 것이다. 집는 순간 이어지면 핀치 중이다.
+            if (count >= 2 && !hands.Right.isPinching && !hands.Left.isPinching)
+                m_DidDrag = true;
+            // 별 두 개를 처음 이었을 때 왼손 취소 시범을 한 번 짧게 보여 준다.
+            if (count == 2 && !m_ShowedUndoDemo)
+            {
+                m_ShowedUndoDemo = true;
+                m_UndoDemoUntil = Now + config.alertSeconds + 0.5f;
+            }
             m_StarCount = count;
             m_LastActivityTime = Now;
             m_LastStarTime = Now;
@@ -780,6 +884,10 @@ namespace Constellation
             redoButton.Hide();
             m_ChoiceShown = false;
             m_RedoCount = 0;
+            m_DidPinchKeyword = false;
+            m_DidDrag = false;
+            m_ShowedUndoDemo = false;
+            m_UndoDemoUntil = 0f;
             completionEffect.Stop();
             drawer.Clear();
             starField.Clear();

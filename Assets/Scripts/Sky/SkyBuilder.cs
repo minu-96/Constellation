@@ -27,6 +27,7 @@ namespace Constellation
         readonly float[] m_NextRippleTime = new float[2];
         readonly Vector3[] m_LastRippleDirection = new Vector3[2];
         int m_NextRippleSlot;
+        float m_NextAmbientRipple;
         float m_ShoreY = 0.42f;
         static readonly int k_Ripple0Id = Shader.PropertyToID("_Ripple0");
         static readonly int k_Ripple1Id = Shader.PropertyToID("_Ripple1");
@@ -133,7 +134,15 @@ namespace Constellation
                 }
             }
 
-            if (m_Hands != null && m_Head != null)
+            // 저절로 이는 물결: 정해진 간격마다 호수의 아무 곳(주로 체험자가 보는 쪽)에서 하나씩 생긴다.
+            if (m_Head != null && Time.time >= m_NextAmbientRipple)
+            {
+                Vector2 interval = m_Config.waterRippleInterval;
+                m_NextAmbientRipple = Time.time + Random.Range(Mathf.Max(0.5f, interval.x), Mathf.Max(interval.x + 0.1f, interval.y));
+                SpawnAmbientRipple();
+            }
+
+            if (m_Config.waterRipplesFollowHands && m_Hands != null && m_Head != null)
             {
                 TryRipple(0, m_Hands.Left);
                 TryRipple(1, m_Hands.Right);
@@ -141,6 +150,22 @@ namespace Constellation
 
             m_SkyMaterial.SetVector(k_Ripple0Id, m_Ripples[0]);
             m_SkyMaterial.SetVector(k_Ripple1Id, m_Ripples[1]);
+        }
+
+        void SpawnAmbientRipple()
+        {
+            Vector3 forward = m_Head.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.0001f)
+                forward = Vector3.forward;
+            float yaw = Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg + Random.Range(-80f, 80f);
+            // 지평선 바로 아래부터 물가 조금 앞까지. 먼 곳(지평선 쪽)에 더 자주 생기게 한다.
+            float maxDepth = Mathf.Max(0.1f, m_ShoreY - 0.05f);
+            float depth = Mathf.Lerp(0.05f, maxDepth, Random.value * Random.value);
+            float horizontal = Mathf.Sqrt(Mathf.Max(0f, 1f - depth * depth));
+            Vector3 direction = new Vector3(Mathf.Sin(yaw * Mathf.Deg2Rad) * horizontal, -depth, Mathf.Cos(yaw * Mathf.Deg2Rad) * horizontal);
+            m_Ripples[m_NextRippleSlot] = new Vector4(direction.x, direction.y, direction.z, 0f);
+            m_NextRippleSlot = (m_NextRippleSlot + 1) % m_Ripples.Length;
         }
 
         void TryRipple(int hand, HandState state)

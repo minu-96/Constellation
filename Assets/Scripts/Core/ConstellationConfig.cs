@@ -134,8 +134,12 @@ namespace Constellation
         public bool enableCompletionEffect = true;
         [Tooltip("별자리가 새겨지는 순간 빛이 퍼져 주변 별과 배경 별이 반응한다")]
         public bool enableCompletionRipple = true;
-        [Tooltip("손이 호수 쪽(지평선 아래)을 가리키면 그 자리에서 물결이 인다")]
+        [Tooltip("호수 곳곳에서 저절로 물결이 인다(물고기가 튀거나 이슬이 떨어진 것처럼)")]
         public bool enableWaterRipples = true;
+        [Tooltip("저절로 이는 물결 사이의 간격(초, 최소~최대)")]
+        public Vector2 waterRippleInterval = new Vector2(2.5f, 6f);
+        [Tooltip("손이 호수 쪽(지평선 아래)을 가리킬 때도 물결을 일으킨다")]
+        public bool waterRipplesFollowHands = false;
         [Tooltip("완성 연출에서 별 하나에서 다음 별로 넘어가는 시간(초)")]
         public float completionStepSeconds = 0.18f;
         [Tooltip("헤드셋 안의 카드 화면에도 QR을 띄운다. 기본은 끔: QR은 모니터 페이지(/wall)에서 찍는다")]
@@ -146,6 +150,8 @@ namespace Constellation
         public int maxRedoCount = 2;
         [Tooltip("고르지 않고 이 시간(초)이 지나면 '남기기'로 처리한다")]
         public float choiceTimeoutSeconds = 20f;
+        [Tooltip("낭독이 끝나기를 기다리는 최대 시간(초). 넘으면 낭독 중이어도 고르기 버튼을 띄운다")]
+        public float choiceWaitForNarrationSeconds = 30f;
         [Tooltip("두 버튼 사이의 거리(m)")]
         public float choiceButtonSpacing = 0.18f;
         [Tooltip("결과 이야기를 목소리로 읽어 준다(중계 서버의 /tts 사용). 실패하면 글자만 보인다")]
@@ -236,6 +242,8 @@ namespace Constellation
         [Header("처음 쓰는 사람 돕기 (기기 테스트 후 조정)")]
         [Tooltip("한동안 입력이 없으면 시범 손이 나타나 핀치와 양손 모으기를 보여 준다")]
         public bool enableGestureGuide = true;
+        [Tooltip("처음 하는 동작은 이 시간(초)만 기다렸다가 바로 시범을 보여 준다. 한 번 해낸 동작은 아래 시간을 쓴다")]
+        public float firstGuideDelaySeconds = 1.5f;
         [Tooltip("이 시간 동안 아무것도 집지 않으면 핀치 시범을 보여 준다(초)")]
         public float pinchGuideDelaySeconds = 5f;
         [Tooltip("별을 충분히 이은 뒤 이 시간 동안 완성하지 않으면 양손 모으기 시범을 보여 준다(초)")]
@@ -389,6 +397,8 @@ namespace Constellation
         public string msgUndoHintLeftPinch = "왼손으로 살짝 집으면 마지막 선이, 길게 쥐면 전부 지워져요";
         public string msgDrawingHintRightHand = "오른손 엄지와 검지로 별을 집어 이어 보세요";
         public string msgCleared = "처음부터 다시 이어 보세요";
+        public string msgDragHint = "집은 채로 다음 별까지 끌어서 놓아도 이어져요";
+        public string msgFinishGuide = "아래의 '완성' 별을 집으면 별자리가 완성돼요";
         public string msgChoiceHint = "마음에 들면 '남기기', 아니면 '다시 만들기'를 집어 보세요";
         public string msgChoiceHintConfirmOnly = "'남기기'를 집으면 별자리 카드가 만들어져요";
         public string msgConfirmLabel = "남기기";
@@ -499,7 +509,7 @@ namespace Constellation
         [Header("개발용")]
         [Tooltip("에디터에서 헤드셋 없이 마우스·키보드로 손을 흉내 낸다")]
         public bool editorSimulation = true;
-        [Tooltip("프레임 수와 프레임 시간을 화면 아래에 띄운다(에디터와 개발 빌드에서만). 전시 빌드에서는 끈다")]
+        [Tooltip("프레임 수와 프레임 시간을 시야 아래에 띄운다. 기기에서 72fps가 나오는지 볼 때 켜고, 전시 빌드에서는 반드시 끈다")]
         public bool showFpsOverlay = false;
         [Tooltip("상태 전환을 콘솔에 남긴다")]
         public bool logStateChanges = true;

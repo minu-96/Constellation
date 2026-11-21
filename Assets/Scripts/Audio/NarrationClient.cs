@@ -42,6 +42,20 @@ namespace Constellation
             get { return m_Config != null && m_Config.enableNarration; }
         }
 
+        /// <summary>
+        /// 지금 읽고 있거나 곧 읽을 예정이면 true. 음성을 받지 못했거나(실패, 서버 없음) 다 읽었으면 false.
+        /// 결과 화면의 고르기 버튼을 낭독이 끝난 뒤에 띄우는 데 쓴다.
+        /// </summary>
+        public bool IsBusy
+        {
+            get
+            {
+                if (m_Source != null && m_Source.isPlaying)
+                    return true;
+                return m_PlayRequested && (m_Fetch != null || m_Clip != null);
+            }
+        }
+
         /// <summary>이야기가 정해지는 즉시 부른다. 결과 화면에 닿기 전에 음성을 미리 받아 둔다.</summary>
         public void Prefetch(string text)
         {
