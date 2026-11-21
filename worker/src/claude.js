@@ -1,9 +1,11 @@
 import { buildPrompt, STORY_SCHEMA } from "./prompt.js";
 
 export const DEFAULT_MODEL = "claude-haiku-5-5";
-const DEFAULT_EFFORT = "low";
+const DEFAULT_EFFORT = "medium";
 const DEFAULT_TIMEOUT_MS = 9000; // 앱이 10초에 끊으므로 그보다 먼저 포기한다.
-const MAX_TOKENS = 1024;
+// 생각(thinking)과 답을 합친 상한. 생각을 깊게 할수록 많이 쓰므로 넉넉히 둔다(실제로 쓴 만큼만 비용이 든다).
+// 모자라면 답이 중간에 끊겨 폴백으로 넘어간다.
+const DEFAULT_MAX_TOKENS = 4096;
 
 const API_URL = "https://api.anthropic.com/v1/messages";
 const API_VERSION = "2023-06-01";
@@ -42,7 +44,7 @@ export function createAnthropicClient(env) {
 export async function requestStoryText(client, env, { keyword, starCount, image, tone, points, recentNames }) {
   const response = await client.messages.create({
     model: env.CLAUDE_MODEL || DEFAULT_MODEL,
-    max_tokens: MAX_TOKENS,
+    max_tokens: toPositiveInt(env.CLAUDE_MAX_TOKENS, DEFAULT_MAX_TOKENS),
     output_config: {
       effort: env.CLAUDE_EFFORT || DEFAULT_EFFORT,
       format: { type: "json_schema", schema: STORY_SCHEMA },

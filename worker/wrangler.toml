@@ -6,8 +6,11 @@ compatibility_date = "2026-11-01"
 [vars]
 # Claude 모델. 품질 비교 후 claude-sonnet-5-5 등으로 바꿀 수 있다.
 CLAUDE_MODEL = "claude-haiku-5-5"
-# 응답 깊이(low | medium | high). 낮을수록 빠르다. 앱 타임아웃이 10초라 low로 시작한다.
-CLAUDE_EFFORT = "low"
+# 응답 깊이(low | medium | high). 깊을수록 모양을 잘 읽지만 느려진다.
+# 앱은 10초에 끊으므로, medium에서 폴백이 자주 나오면 low로 되돌린다.
+CLAUDE_EFFORT = "medium"
+# 생각과 답을 합친 토큰 상한. 모자라면 답이 끊겨 폴백으로 넘어간다.
+CLAUDE_MAX_TOKENS = "4096"
 # Claude 호출 제한 시간(ms). 앱의 10초 타임아웃보다 짧게 둔다.
 CLAUDE_TIMEOUT_MS = "9000"
 # 기기당 분당 호출 횟수. 기기 테스트 후 조정.

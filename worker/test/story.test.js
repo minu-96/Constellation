@@ -193,6 +193,16 @@ describe("정상 흐름", () => {
     expect(t.create.mock.calls[0][0].messages[0].content[1].text).toContain("최근 다른 사람들이 받은 이름: 소원나무별, 바람길별");
   });
 
+  it("응답 깊이 기본값은 medium, 토큰 상한은 4096이고 환경 변수로 바꿀 수 있다", async () => {
+    const t = setup();
+    await t.send(storyRequest(goodBody()), { ...TEST_ENV, CLAUDE_EFFORT: undefined });
+    expect(t.create.mock.calls[0][0].output_config.effort).toBe("medium");
+    expect(t.create.mock.calls[0][0].max_tokens).toBe(4096);
+    await t.send(storyRequest(goodBody()), { ...TEST_ENV, CLAUDE_EFFORT: "low", CLAUDE_MAX_TOKENS: "2000" });
+    expect(t.create.mock.calls[1][0].output_config.effort).toBe("low");
+    expect(t.create.mock.calls[1][0].max_tokens).toBe(2000);
+  });
+
   it("모델명 환경 변수가 없으면 claude-haiku-5-5를 쓴다", async () => {
     const t = setup();
     await t.send(storyRequest(goodBody()), { ...TEST_ENV, CLAUDE_MODEL: undefined });

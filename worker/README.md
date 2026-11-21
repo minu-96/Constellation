@@ -191,10 +191,19 @@ npm run deploy
 | 이름 | 기본값 | 설명 |
 | --- | --- | --- |
 | `CLAUDE_MODEL` | `claude-haiku-5-5` | 모델명. 품질 비교 후 `claude-sonnet-5-5` 등으로 바꿀 수 있다 |
-| `CLAUDE_EFFORT` | `low` | 응답 깊이. 낮을수록 빠르다 |
+| `CLAUDE_EFFORT` | `medium` | 응답 깊이(low, medium, high). 깊을수록 모양을 잘 읽지만 느리다. 폴백이 자주 나오면 low로 |
+| `CLAUDE_MAX_TOKENS` | `4096` | 생각과 답을 합친 토큰 상한. 실제로 쓴 만큼만 비용이 든다 |
 | `CLAUDE_TIMEOUT_MS` | `9000` | Claude 호출 제한 시간. 앱의 10초보다 짧게 둔다 |
 | `RATE_LIMIT_PER_MINUTE` | `6` | 기기당 분당 호출 횟수(이야기와 카드를 따로 센다). 기기 테스트 후 조정 |
 | `CARD_TTL_DAYS` | `30` | 결과 카드 보관 기간(일) |
+
+### 응답 시간 보기
+
+배포한 서버의 로그를 실시간으로 보면, 이야기 요청마다 `claude_ok_ms`(걸린 시간, ms)가 찍힙니다. 앱은 10초에 끊으므로 대부분 8000 아래여야 합니다.
+
+```bash
+npx wrangler tail
+```
 
 ## 알아 둘 점
 
